@@ -1,0 +1,238 @@
+body {
+  padding: 0;
+  margin: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+  color: #222222;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+body.dark-theme {
+  background-color: #242f3e;
+  color: white;
+}
+
+h1 {
+  margin-left: 4px;
+  margin-top: 21px;
+  margin-bottom: 0;
+  padding-top: 0;
+  font-size: 16px;
+  padding-left: 11px;
+  padding-right: 11px;
+}
+
+@-webkit-keyframes rotating {
+  from {
+      -webkit-transform: rotate(0deg);
+  }
+  to {
+      -webkit-transform: rotate(360deg);
+  }
+}
+
+#preloader {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin-left: -24px;
+  margin-top: -24px;
+  border: #31a9df 3px solid;
+  border-left-color: transparent;
+  border-radius: 50%;
+  -webkit-animation: rotating 1s linear infinite;
+}
+
+#buttons {
+  clear: both;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+a, a:hover, a:after, a:focus,
+button, button:hover, button:after, button:focus {
+  color: #108be3;
+  text-decoration: none;
+  font-size: 17px;
+  padding: 8px;
+  border: none;
+  box-shadow: none;
+  background: none;
+  outline: 0;
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 32px;
+}
+
+.dark-theme button, .dark-theme button:hover, .dark-theme button:after, .dark-theme button:focus,
+.dark-theme a, .dark-theme a:hover, .dark-theme a:after, .dark-theme a:focus {
+  color: #36a8f1;
+}
+
+.tchart {
+  box-sizing: border-box;
+  position: relative;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 64px;
+  width: 100%;
+  float: left;
+}
+
+@media (min-width: 700px) {
+  .tchart {
+      width: 50%;
+  }
+}
+
+@media (min-width: 1000px) {
+  .tchart {
+      width: 33%;
+  }
+}
+
+.tchart canvas {
+  width: 100%;
+  height: 359px;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+/* popup */
+
+.tchart .popup {
+  pointer-events: none;
+
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 1px 1px #d8d8d8;
+
+  position: absolute;
+  padding: 6px 2px 4px;
+
+  max-width: 166px;
+}
+
+.dark-theme .tchart .popup {
+  background: #253241;
+  box-shadow: 0 1px 1px 1px #1e2834;
+}
+
+.tchart .popup .title {
+  font-size: 12px;
+  margin-right: 8px;
+  margin-left: 8px;
+}
+
+.tchart .popup .column {
+  float: left;
+  margin-top: 8px;
+  margin-right: 8px;
+  margin-left: 8px;
+}
+
+.tchart .popup .value {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.tchart .popup .label {
+  font-size: 10px;
+  margin-bottom: 1px;
+}
+
+/* CHECK */
+
+.tchart .checks {
+  padding-left: 11px;
+  padding-right: 11px;
+}
+
+.tchart .checkbox {
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  float: left;
+  border: 1px solid #e6ecf0;
+  border-radius: 16px;
+
+  padding: 9px 14px 8px 37px;
+
+  margin-right: 14px;
+  margin-top: 12px;
+  cursor: pointer;
+  font-size: 13px;
+
+  color: #43484b;
+}
+
+.dark-theme .tchart .checkbox {
+  border-color: #344658;
+  color: #e8ecee;
+}
+
+.tchart .checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.tchart .checkbox .circle {
+  box-sizing: border-box;
+  position: absolute;
+  top: 6px;
+  left: 7px;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 1px solid #3cc23f;
+  transition: border-width 0.3s linear;
+}
+
+.dark-theme .tchart .checkbox .circle {
+  background-color: #242f3e;
+}
+
+.tchart .checkbox:hover input ~ .circle {
+}
+
+.tchart .checkbox input:checked ~ .circle {
+  border-width: 10px;
+}
+
+.tchart .checkbox .symbol {
+  position: absolute;
+  display: block;
+  left: 12px;
+  top: 12px;
+
+  width: 10px;
+  height: 10px;
+
+  background-image: url('check.svg');
+  background-size: cover;
+  background-repeat: no-repeat;
+
+  -webkit-transform: scale(0.1, 0.1);
+  -ms-transform: scale(0.1, 0.1);
+  transform: scale(0.1, 0.1);
+
+  opacity: 0;
+  transition: opacity 0.3s linear, transform 0.3s linear;
+}
+
+.tchart .checkbox input:checked ~ .symbol {
+  opacity: 1;
+  -webkit-transform: scale(1, 1);
+  -ms-transform: scale(1, 1);
+  transform: scale(1, 1);
+}
+
