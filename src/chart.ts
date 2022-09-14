@@ -215,7 +215,7 @@ export const TChart = (container: HTMLDivElement) => {
         onMouseMove(touches[0])
     }
 
-    function onMouseUp(e: any) {
+    function onMouseUp(_: any) {
         mouseMode = NONE;
     }
 
