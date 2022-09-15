@@ -14,7 +14,7 @@ export type ThemeColors = {
     previewBorderAlpha: number;
 };
 
-export type Columns = {
+export type Column = {
     name: any;
     data: any;
     min: any;
@@ -36,6 +36,33 @@ export type Columns = {
         delay: number;
     };
 };
+
+export type ColumnModified = {
+    name: any;
+    data: any;
+    min: any;
+    max: any;
+    saveScaleY?: number;
+    saveOffsetY?: number;
+    alpha: {
+        fromValue: any;
+        toValue: any;
+        value: any;
+        startTime: number;
+        duration: any;
+        delay: number;
+    };
+    previewAlpha: {
+        fromValue: any;
+        toValue: any;
+        value: any;
+        startTime: number;
+        duration: any;
+        delay: number;
+    };
+};
+
+export type Columns = ColumnModified[];
 
 export interface Data {
     columns: Array<Array<number | string>>;
@@ -95,8 +122,8 @@ export function TChart(container: any) {
 
     let colors: Nullable<ThemeColors> = null;
     let data: Nullable<any> = null;
-    let xColumn: Nullable<Columns> = null;
-    let columns: any = null;
+    let xColumn: Nullable<Column> = null;
+    let columns: Nullable<Columns> = null;
     let popupColumns: any = null;
     let popupValues: any = null;
 
@@ -371,6 +398,7 @@ export function TChart(container: any) {
                     if (value < column.min) column.min = value;
                     else if (value > column.max) column.max = value;
                 }
+
                 columns.push(column);
 
                 // create checkbox
@@ -385,19 +413,21 @@ export function TChart(container: any) {
                     input.type = 'checkbox';
                     addEventListener(input, 'change', function (e: any) {
                         const id = e.currentTarget.getAttribute('data-id');
-                        const checked = e.currentTarget.checked;
-                        const checkedColumn = columns[id];
-                        checkedColumn.saveScaleY = previewScaleY;
-                        checkedColumn.saveOffsetY = previewOffsetY;
+                        if (columns && columns[id]) {
+                            const checked = e.currentTarget.checked;
+                            const checkedColumn = columns[id];
+                            checkedColumn.saveScaleY = previewScaleY;
+                            checkedColumn.saveOffsetY = previewOffsetY;
 
-                        play(checkedColumn.alpha, checked ? 1 : 0);
+                            play(checkedColumn.alpha, checked ? 1 : 0);
 
-                        checkedColumn.previewAlpha.delay = checked ? SCALE_DURATION / 2 : 0;
-                        play(checkedColumn.previewAlpha, checked ? 1 : 0);
+                            checkedColumn.previewAlpha.delay = checked ? SCALE_DURATION / 2 : 0;
+                            play(checkedColumn.previewAlpha, checked ? 1 : 0);
 
-                        needRedrawMain = needRedrawPreview = true;
-                        updatePreviewRangeY();
-                        updateMainRangeY();
+                            needRedrawMain = needRedrawPreview = true;
+                            updatePreviewRangeY();
+                            updateMainRangeY();
+                        }
                     });
 
                     let span = createElement(label, 'span', 'circle');
@@ -468,15 +498,14 @@ export function TChart(container: any) {
         mainMinY = forceMinY !== undefined ? forceMinY : Number.MAX_VALUE;
         mainMaxY = Number.MIN_VALUE;
 
-        for (let c = 0; c < columns.length; c++) {
-            const column = columns[c];
-            if (column.alpha.toValue === 0) continue;
+        columns?.forEach(column => {
+            if (column.alpha.toValue === 0) return;
             for (let i = mainMinI; i < mainMaxI; i++) {
                 const y = column.data[i];
                 if (y < mainMinY) mainMinY = y;
                 if (y > mainMaxY) mainMaxY = y;
             }
-        }
+        });
 
         if (mainMaxY === Number.MIN_VALUE) mainMaxY = 1;
 
@@ -503,12 +532,11 @@ export function TChart(container: any) {
         previewMinY = forceMinY !== undefined ? forceMinY : Number.MAX_VALUE;
         previewMaxY = Number.MIN_VALUE;
 
-        for (let c = 0; c < columns.length; c++) {
-            const column = columns[c];
-            if (column.alpha.toValue === 0) continue;
+        columns?.forEach(column => {
+            if (column.alpha.toValue === 0) return;
             if (column.min < previewMinY) previewMinY = column.min;
             if (column.max > previewMaxY) previewMaxY = column.max;
-        }
+        });
 
         if (previewMaxY === Number.MIN_VALUE) previewMaxY = 1;
 
@@ -559,12 +587,11 @@ export function TChart(container: any) {
                     const x = xColumn?.data[selectI];
                     if (popupTitle) popupTitle.innerText = formatDate(x, false);
 
-                    for (let c = 0; c < columns.length; c++) {
-                        const yColumn = columns[c];
-                        const y = yColumn.data[selectI];
-                        popupColumns[c].style.display = yColumn.alpha.toValue === 0 ? 'none' : 'block';
-                        popupValues[c].innerText = formatNumber(y, false);
-                    }
+                    columns?.forEach((column, i) => {
+                        const y = column.data[selectI];
+                        popupColumns[i].style.display = column.alpha.toValue === 0 ? 'none' : 'block';
+                        popupValues[i].innerText = formatNumber(y, false);
+                    });
                 }
 
                 popupBounds = popup.getBoundingClientRect();
@@ -664,11 +691,10 @@ export function TChart(container: any) {
                 if (updateAnimation(mainRangeY)) needRedrawMain = true;
                 if (updateAnimation(previewRangeY)) needRedrawPreview = true;
 
-                for (let c = 0; c < columns.length; c++) {
-                    const yColumn = columns[c];
-                    if (updateAnimation(yColumn.alpha)) needRedrawMain = true;
-                    if (updateAnimation(yColumn.previewAlpha)) needRedrawPreview = true;
-                }
+                columns?.forEach((column, _) => {
+                    if (updateAnimation(column.alpha)) needRedrawMain = true;
+                    if (updateAnimation(column.previewAlpha)) needRedrawPreview = true;
+                });
 
                 // render
 
@@ -747,29 +773,29 @@ export function TChart(container: any) {
         previewScaleY = -previewHeight / previewRangeY.value;
         previewOffsetY = height - previewMinY * previewScaleY;
 
-        for (let c = 0; c < columns.length; c++) {
-            const yColumn = columns[c];
-
-            if (yColumn.previewAlpha.value === 0) continue;
+        columns?.forEach((column, _) => {
+            if (column.previewAlpha.value === 0) return;
 
             let columnScaleY = previewScaleY;
             let columnOffsetY = previewOffsetY;
 
-            if (yColumn.alpha.toValue === 0) {
-                columnScaleY = yColumn.saveScaleY;
-                columnOffsetY = yColumn.saveOffsetY;
+            if (column.alpha.toValue === 0) {
+                if (column.saveScaleY && column.saveOffsetY) {
+                    columnScaleY = column.saveScaleY;
+                    columnOffsetY = column.saveOffsetY;
+                }
             } else {
-                let columnRangeY = yColumn.max - yColumn.min;
+                let columnRangeY = column.max - column.min;
                 if (columnRangeY > previewRangeY.value) {
                     columnScaleY = -previewHeight / columnRangeY;
                     columnOffsetY = height - previewMinY * columnScaleY;
                 }
             }
 
-            context.globalAlpha = yColumn.previewAlpha.value;
+            context.globalAlpha = column.previewAlpha.value;
             context.lineWidth = previewLineWidth;
-            renderPath(yColumn, 1, yColumn.data.length, previewScaleX, columnScaleY, previewOffsetX, columnOffsetY)
-        }
+            renderPath(column, 1, column.data.length, previewScaleX, columnScaleY, previewOffsetX, columnOffsetY)
+        });
 
         // draw preview ui
 
@@ -816,16 +842,14 @@ export function TChart(container: any) {
 
         // paths
 
-        for (let c = 0; c < columns.length; c++) {
-            const yColumn = columns[c];
+        columns?.forEach((column, _) => {
+            if (column.alpha.value === 0) return;
 
-            if (yColumn.alpha.value === 0) continue;
-
-            context.globalAlpha = yColumn.alpha.value;
+            context.globalAlpha = column.alpha.value;
             context.lineWidth = mainLineWidth;
 
-            renderPath(yColumn, mainMinI, mainMaxI, mainScaleX, mainScaleY, mainOffsetX, mainOffsetY);
-        }
+            renderPath(column, mainMinI, mainMaxI, mainScaleX, mainScaleY, mainOffsetX, mainOffsetY);
+        })
 
         // select
 
@@ -840,18 +864,17 @@ export function TChart(container: any) {
             context.stroke();
 
             const xArc = xColumn?.data[selectI] as number;
-            for (let c = 0; c < columns.length; c++) {
-                const yColumn = columns[c];
-                if (yColumn.alpha.toValue === 0) continue;
-                const y = yColumn.data[selectI];
-                context.strokeStyle = data.colors[yColumn.name];
+            columns?.forEach((column, _) => {
+                if (column.alpha.toValue === 0) return;
+                const y = column.data[selectI];
+                context.strokeStyle = data.colors[column.name];
                 context.fillStyle = colors?.circleFill;
                 context.lineWidth = circleLineWidth;
                 context.beginPath();
                 context.arc(xArc * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
                 context.stroke();
                 context.fill();
-            }
+            });
         }
 
         // text
@@ -869,7 +892,7 @@ export function TChart(container: any) {
         context.fillText(formatNumber(mainMinY), paddingHor, mainHeight + textYMargin);
     }
 
-    function renderPath(yColumn: any, minI: any, maxI: any, scaleX: any, scaleY: any, offsetX: any, offsetY: any) {
+    function renderPath(yColumn: ColumnModified, minI: number, maxI: number, scaleX: number, scaleY: number, offsetX: number, offsetY: number) {
         context.strokeStyle = data.colors[yColumn.name];
 
         context.beginPath();
