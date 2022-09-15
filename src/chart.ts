@@ -289,7 +289,7 @@ export function TChart(container: any) {
         onMouseMove(e.touches[0])
     }
 
-    function onMouseUp(e: any) {
+    function onMouseUp(_: any) {
         mouseMode = NONE;
     }
 
