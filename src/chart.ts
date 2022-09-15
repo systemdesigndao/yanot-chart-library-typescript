@@ -950,9 +950,6 @@ export function TChart(container: any) {
     }
 
     const run = () => {
-
-        addEventListener
-
         requestAnimationFrame(render);
         addEventListener(document, 'mousedown', onMouseDown);
         addEventListener(document, 'touchstart', onTouchDown);
