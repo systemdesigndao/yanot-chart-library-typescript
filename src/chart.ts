@@ -30,14 +30,14 @@ export const TChart = (container: HTMLDivElement) => {
         return n.toString()
     }
 
-    function createElement(parent: { appendChild: (arg0: any) => void; }, tag: string, clazz?: string) {
+    function createElement(parent: { appendChild: (arg0: any) => void; }, tag: string, clazz?: string): any {
         const element = document.createElement(tag);
         if (clazz) element.classList.add(clazz);
         parent.appendChild(element);
         return element;
     }
 
-    function removeAllChild(parent: { firstChild: any; removeChild: (arg0: any) => void; }) {
+    function removeAllChild(parent: HTMLElement | HTMLDivElement) {
         while (parent.firstChild) {
             parent.removeChild(parent.firstChild);
         }
@@ -81,9 +81,9 @@ export const TChart = (container: HTMLDivElement) => {
     const canvas = createElement(container, 'canvas') as HTMLCanvasElement;
     const context = canvas.getContext('2d');
     const checksContainer = createElement(container, 'div', 'checks');
-    const popup = createElement(container, 'div', 'popup');
+    let popup = createElement(container, 'div', 'popup');
     popup.style.display = 'none';
-    let popupTitle: { innerText: string; } | null = null;
+    let popupTitle: HTMLDivElement | null = null;
 
     let colors: { previewAlpha: any; preview: any; previewBorderAlpha: any; previewBorder: any; line: any; zeroLine: any; selectLine: any; circleFill: any; text: any; } | null = null;
     let data: { types?: any; columns: string | any[]; names?: { [x: string]: any; }; colors?: { [x: string]: any; }; } | null = null;
@@ -348,6 +348,7 @@ export const TChart = (container: HTMLDivElement) => {
 
                     if (data.colors) {
                         let span = createElement(label, 'span', 'circle');
+                        
                         span.style.borderColor = data.colors[name];
 
                         span = createElement(label, 'span', 'symbol');
@@ -609,6 +610,7 @@ export const TChart = (container: HTMLDivElement) => {
                     select(screenToMainX(Math.floor(mouseX)), Math.floor(mouseY));
                 } else {
                     select(null, null);
+                    popup.style.display = 'none';
                 }
 
                 // animation
