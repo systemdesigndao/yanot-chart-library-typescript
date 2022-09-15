@@ -102,7 +102,7 @@ export function TChart(container: any) {
     let popupTitle: Nullable<HTMLDivElement> = null;
 
     let colors: Nullable<ThemeColors> = null;
-    let data: Nullable<any> = null;
+    let data: Nullable<Data> = null;
     let xColumn: Nullable<Columns> = null;
     let columns: any = null;
     let popupColumns: any = null;
@@ -293,14 +293,6 @@ export function TChart(container: any) {
         mouseMode = NONE;
     }
 
-    addEventListener(document, 'mousedown', onMouseDown);
-    addEventListener(document, 'touchstart', onTouchDown);
-    addEventListener(document, 'mousemove', onMouseMove);
-    addEventListener(document, 'touchmove', onTouchMove);
-    addEventListener(document, 'mouseup', onMouseUp);
-    addEventListener(document, 'touchend', onMouseUp);
-    addEventListener(document, 'touchcancel', onMouseUp);
-
     const destroy = function () {
         destroyed = true;
         removeAllChild(container);
@@ -338,8 +330,7 @@ export function TChart(container: any) {
         needRedrawMain = needRedrawPreview = true;
     };
 
-    const setData = function (newData: any) {
-        console.log(newData);
+    const setData = function (newData: Data) {
         function findNameOfX(types: any) {
             for (const name in types) {
                 if (types[name] === 'x') return name;
@@ -391,7 +382,7 @@ export function TChart(container: any) {
 
                 if (data.columns.length > 2) {
                     const label = createElement<HTMLLabelElement>(checksContainer, 'label', 'checkbox');
-                    label.innerText = data.names[name];
+                    label.innerText = data.names[name as keyof Names];
 
                     const input = createElement<HTMLInputElement>(label, 'input');
                     input.setAttribute('data-id', (columns.length - 1).toString());
@@ -415,7 +406,7 @@ export function TChart(container: any) {
                     });
 
                     let span = createElement<HTMLSpanElement>(label, 'span', 'circle');
-                    span.style.borderColor = data.colors[name];
+                    span.style.borderColor = data.colors[name as keyof Names];
 
                     span = createElement(label, 'span', 'symbol');
                 }
@@ -423,14 +414,14 @@ export function TChart(container: any) {
                 // create popup column
 
                 const popupColumn = createElement<HTMLDivElement>(popup, 'div', 'column');
-                popupColumn.style.color = data.colors[name];
+                popupColumn.style.color = data.colors[name as keyof Names];
                 popupColumns.push(popupColumn);
 
                 const popupValue = createElement<HTMLDivElement>(popupColumn, 'div', 'value');
                 popupValues.push(popupValue);
 
                 const popupLabel = createElement<HTMLDivElement>(popupColumn, 'div', 'label');
-                popupLabel.innerText = data.names[name];
+                popupLabel.innerText = data.names[name as keyof Names];
             }
         }
 
@@ -867,7 +858,7 @@ export function TChart(container: any) {
                     const yColumn = columns[c];
                     if (yColumn.alpha.toValue === 0) continue;
                     const y = yColumn.data[selectI];
-                    context.strokeStyle = data.colors[yColumn.name];
+                    context.strokeStyle = data?.colors[yColumn.name as keyof Names] as string;
                     context.fillStyle = colors?.circleFill;
                     context.lineWidth = circleLineWidth;
                     context.beginPath();
@@ -895,7 +886,7 @@ export function TChart(container: any) {
 
     function renderPath(yColumn: any, minI: any, maxI: any, scaleX: any, scaleY: any, offsetX: any, offsetY: any) {
         withDefinedVariables((context) => {
-            context.strokeStyle = data.colors[yColumn.name];
+            context.strokeStyle = data?.colors[yColumn.name as keyof Names] as string;
 
             context.beginPath();
             context.lineJoin = 'bevel';
@@ -919,6 +910,14 @@ export function TChart(container: any) {
 
     const run = () => {
         requestAnimationFrame(render);
+
+        addEventListener(document, 'mousedown', onMouseDown);
+        addEventListener(document, 'touchstart', onTouchDown);
+        addEventListener(document, 'mousemove', onMouseMove);
+        addEventListener(document, 'touchmove', onTouchMove);
+        addEventListener(document, 'mouseup', onMouseUp);
+        addEventListener(document, 'touchend', onMouseUp);
+        addEventListener(document, 'touchcancel', onMouseUp);
     }
 
     return {
