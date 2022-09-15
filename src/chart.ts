@@ -3,18 +3,18 @@
 type Nullable<T> = null | T;
 
 export type ThemeColors = {
-    circleFill: string | CanvasGradient | CanvasPattern;
-    line: string | CanvasGradient | CanvasPattern;
+    circleFill: string;
+    line: string;
     zeroLine: string;
     selectLine: string;
-    text: string | CanvasGradient | CanvasPattern;
-    preview: string | CanvasGradient | CanvasPattern;
-    previewAlpha: CanvasCompositing["globalAlpha"];
+    text: string;
+    preview: string;
+    previewAlpha: number;
     previewBorder: string;
     previewBorderAlpha: number;
 };
 
-export type Column = {
+export type Columns = {
     name: any;
     data: any;
     min: any;
@@ -36,73 +36,32 @@ export type Column = {
         delay: number;
     };
 };
-
-export type ColumnModified = {
-    name: any;
-    data: any;
-    min: any;
-    max: any;
-    saveScaleY?: number;
-    saveOffsetY?: number;
-    alpha: {
-        fromValue: any;
-        toValue: any;
-        value: any;
-        startTime: number;
-        duration: any;
-        delay: number;
-    };
-    previewAlpha: {
-        fromValue: any;
-        toValue: any;
-        value: number;
-        startTime: number;
-        duration: any;
-        delay: number;
-    };
-};
-
-export type Columns = ColumnModified[];
 
 export interface Data {
     columns: Array<Array<number | string>>;
-    types:   DataSubProperty;
-    names:   DataSubProperty;
-    colors:  DataSubProperty;
+    types:   Types;
+    names:   Names;
+    colors:  Colors;
 }
 
-export interface DataSubProperty {
-    y0:  string;
-    y1:  string;
-    y2?: string;
-    y3?: string;
-    x?:  string;
+export interface Names {
+    y0: string;
+    y1: string;
 }
 
-export type UpdateAnimation = {
-    fromValue: number;
-    toValue: number;
-    value: number;
-    startTime: number;
-    duration: number;
-    delay: number;
-};
+export interface Colors {
+    y0: string;
+    y1: string;
+}
 
-export type TextAxises = {
-    delta: number;
-    alpha: {
-        fromValue: number;
-        toValue: number;
-        value: number;
-        startTime: number;
-        duration: number;
-        delay: number;
-    };
-};
+export interface Types {
+    y0: string;
+    y1: string;
+    x:  string;
+}
 
 export function TChart(container: any) {
     // non-dynamic variables
-
     let MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     let DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -143,11 +102,11 @@ export function TChart(container: any) {
     let popupTitle: Nullable<HTMLDivElement> = null;
 
     let colors: Nullable<ThemeColors> = null;
-    let data: Nullable<Data> = null;
-    let xColumn: Nullable<Column> = null;
-    let columns: Nullable<Columns> = null;
-    let popupColumns: Nullable<HTMLDivElement[]> = null;
-    let popupValues: Nullable<HTMLDivElement[]> = null;
+    let data: Nullable<any> = null;
+    let xColumn: Nullable<Columns> = null;
+    let columns: any = null;
+    let popupColumns: any = null;
+    let popupValues: any = null;
 
     let width = 0;
     let height = 0;
@@ -212,26 +171,26 @@ export function TChart(container: any) {
 
     let time = 0;
 
-    let popupBounds: Nullable<DOMRect> = null;
+    let popupBounds: any = null;
 
     let mouseMode = NONE;
 
     let destroyed = false;
 
-    function withDefinedVariables(cb: (context: CanvasRenderingContext2D) => void) {
-        if (context) {
-            return cb(context);
+    function withDefinedVariables(cb: (context: CanvasRenderingContext2D, colors: ThemeColors) => void) {
+        if (context && colors) {
+            return cb(context, colors);
         }
     }
 
-    function formatDate(time: number, short = false) {
+    function formatDate(time: any, short: any) {
         const date = new Date(time);
         const s = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
         if (short) return s;
         return DAY_NAMES[date.getDay()] + ', ' + s;
     }
 
-    function formatNumber(n: number, short = false) {
+    function formatNumber(n: any, short: boolean = false) {
         const abs = Math.abs(n);
         if (abs > 1000000000 && short) return (n / 1000000000).toFixed(2) + 'B';
         if (abs > 1000000 && short) return (n / 1000000).toFixed(2) + 'M';
@@ -250,28 +209,28 @@ export function TChart(container: any) {
         return n.toString()
     }
 
-    function createElement<T>(parent: HTMLElement, tag: string, clazz: string = ''): T {
+    function createElement<T>(parent: any, tag: any, clazz = ''): T {
         const element = document.createElement(tag);
         if (clazz) element.classList.add(clazz);
         parent.appendChild(element);
-        return element as T;
+        return <T>element;
     }
 
-    function removeAllChild(parent: HTMLElement) {
+    function removeAllChild(parent: any) {
         while (parent.firstChild) {
             parent.removeChild(parent.firstChild);
         }
     }
 
-    function addEventListener(element: Document | HTMLElement, event: string, listener: (this: Document, ev: any) => any) {
+    function addEventListener(element: any, event: any, listener: any) {
         element.addEventListener(event, listener, false);
     }
 
-    function removeEventListener(element: Document | HTMLElement, event: string, listener: (this: Document, ev: any) => any) {
+    function removeEventListener(element: any, event: any, listener: any) {
         element.removeEventListener(event, listener);
     }
 
-    function createAnimation(value: number, duration: number) {
+    function createAnimation(value: any, duration: any) {
         return {
             fromValue: value,
             toValue: value,
@@ -282,13 +241,13 @@ export function TChart(container: any) {
         }
     }
 
-    function play(anim: UpdateAnimation, toValue: number) {
+    function play(anim: any, toValue: any) {
         anim.startTime = time;
         anim.toValue = toValue;
         anim.fromValue = anim.value;
     }
 
-    function updateAnimation(anim: UpdateAnimation): UpdateAnimation | boolean {
+    function updateAnimation(anim: any) {
         if (anim.value === anim.toValue) return false;
         let progress = ((time - anim.startTime) - anim.delay) / anim.duration;
         if (progress < 0) progress = 0;
@@ -298,7 +257,7 @@ export function TChart(container: any) {
         return true;
     }
 
-    function onMouseDown(e: MouseEvent | Touch) {
+    function onMouseDown(e: any) {
         newMouseX = mouseX = (e.clientX - canvasBounds.left) * pixelRatio;
         newMouseY = mouseY = (e.clientY - canvasBounds.top) * pixelRatio;
 
@@ -317,22 +276,30 @@ export function TChart(container: any) {
         }
     }
 
-    function onTouchDown(e: TouchEvent) {
+    function onTouchDown(e: any) {
         onMouseDown(e.touches[0])
     }
 
-    function onMouseMove(e: MouseEvent | Touch) {
+    function onMouseMove(e: any) {
         newMouseX = (e.clientX - canvasBounds.left) * pixelRatio;
         newMouseY = (e.clientY - canvasBounds.top) * pixelRatio;
     }
 
-    function onTouchMove(e: TouchEvent) {
+    function onTouchMove(e: any) {
         onMouseMove(e.touches[0])
     }
 
-    function onMouseUp(_: any) {
+    function onMouseUp(e: any) {
         mouseMode = NONE;
     }
+
+    addEventListener(document, 'mousedown', onMouseDown);
+    addEventListener(document, 'touchstart', onTouchDown);
+    addEventListener(document, 'mousemove', onMouseMove);
+    addEventListener(document, 'touchmove', onTouchMove);
+    addEventListener(document, 'mouseup', onMouseUp);
+    addEventListener(document, 'touchend', onMouseUp);
+    addEventListener(document, 'touchcancel', onMouseUp);
 
     const destroy = function () {
         destroyed = true;
@@ -346,23 +313,23 @@ export function TChart(container: any) {
         removeEventListener(document, 'touchcancel', onMouseUp);
     };
 
-    function screenToMainX(screenX: number) {
+    function screenToMainX(screenX: any) {
         return (screenX - mainOffsetX) / mainScaleX;
     }
 
-    function mainToScreenX(x: number) {
+    function mainToScreenX(x: any) {
         return x * mainScaleX + mainOffsetX;
     }
 
-    function mainToScreenY(y: number) {
+    function mainToScreenY(y: any) {
         return y * mainScaleY + mainOffsetY;
     }
 
-    function screenToPreviewX(screenX: number) {
+    function screenToPreviewX(screenX: any) {
         return (screenX - previewOffsetX) / previewScaleX;
     }
 
-    function previewToScreenX(x: number) {
+    function previewToScreenX(x: any) {
         return x * previewScaleX + previewOffsetX;
     }
 
@@ -371,10 +338,11 @@ export function TChart(container: any) {
         needRedrawMain = needRedrawPreview = true;
     };
 
-    const setData = function (newData: Data) {
-        function findNameOfX(types: DataSubProperty) {
+    const setData = function (newData: any) {
+        console.log(newData);
+        function findNameOfX(types: any) {
             for (const name in types) {
-                if (types[name as keyof DataSubProperty] === 'x') return name;
+                if (types[name] === 'x') return name;
             }
             return null;
         }
@@ -385,7 +353,7 @@ export function TChart(container: any) {
 
         removeAllChild(checksContainer);
         removeAllChild(popup);
-        popupTitle = createElement<HTMLDivElement>(popup, 'div', 'title');
+        popupTitle = createElement(popup, 'div', 'title');
 
         if (newData.columns.length < 2 || newData.columns[0].length < 3) {
             data = null;
@@ -417,55 +385,52 @@ export function TChart(container: any) {
                     if (value < column.min) column.min = value;
                     else if (value > column.max) column.max = value;
                 }
-
                 columns.push(column);
 
                 // create checkbox
 
                 if (data.columns.length > 2) {
                     const label = createElement<HTMLLabelElement>(checksContainer, 'label', 'checkbox');
-                    label.innerText = data.names[name as keyof DataSubProperty] as string;
+                    label.innerText = data.names[name];
 
                     const input = createElement<HTMLInputElement>(label, 'input');
                     input.setAttribute('data-id', (columns.length - 1).toString());
                     input.checked = true;
                     input.type = 'checkbox';
-                    addEventListener(input, 'change', function (e) {
+                    addEventListener(input, 'change', function (e: any) {
                         const id = e.currentTarget.getAttribute('data-id');
-                        if (columns && columns[id]) {
-                            const checked = e.currentTarget.checked;
-                            const checkedColumn = columns[id];
-                            checkedColumn.saveScaleY = previewScaleY;
-                            checkedColumn.saveOffsetY = previewOffsetY;
+                        const checked = e.currentTarget.checked;
+                        const checkedColumn = columns[id];
+                        checkedColumn.saveScaleY = previewScaleY;
+                        checkedColumn.saveOffsetY = previewOffsetY;
 
-                            play(checkedColumn.alpha, checked ? 1 : 0);
+                        play(checkedColumn.alpha, checked ? 1 : 0);
 
-                            checkedColumn.previewAlpha.delay = checked ? SCALE_DURATION / 2 : 0;
-                            play(checkedColumn.previewAlpha, checked ? 1 : 0);
+                        checkedColumn.previewAlpha.delay = checked ? SCALE_DURATION / 2 : 0;
+                        play(checkedColumn.previewAlpha, checked ? 1 : 0);
 
-                            needRedrawMain = needRedrawPreview = true;
-                            updatePreviewRangeY();
-                            updateMainRangeY();
-                        }
+                        needRedrawMain = needRedrawPreview = true;
+                        updatePreviewRangeY();
+                        updateMainRangeY();
                     });
 
                     let span = createElement<HTMLSpanElement>(label, 'span', 'circle');
-                    span.style.borderColor = data.colors[name as keyof DataSubProperty] as string;
+                    span.style.borderColor = data.colors[name];
 
-                    span = createElement<HTMLSpanElement>(label, 'span', 'symbol');
+                    span = createElement(label, 'span', 'symbol');
                 }
 
                 // create popup column
 
                 const popupColumn = createElement<HTMLDivElement>(popup, 'div', 'column');
-                popupColumn.style.color = data.colors[name as keyof DataSubProperty] as string;
+                popupColumn.style.color = data.colors[name];
                 popupColumns.push(popupColumn);
 
                 const popupValue = createElement<HTMLDivElement>(popupColumn, 'div', 'value');
                 popupValues.push(popupValue);
 
                 const popupLabel = createElement<HTMLDivElement>(popupColumn, 'div', 'label');
-                popupLabel.innerText = data.names[name as keyof DataSubProperty] as string;
+                popupLabel.innerText = data.names[name];
             }
         }
 
@@ -517,14 +482,15 @@ export function TChart(container: any) {
         mainMinY = forceMinY !== undefined ? forceMinY : Number.MAX_VALUE;
         mainMaxY = Number.MIN_VALUE;
 
-        columns?.forEach(column => {
-            if (column.alpha.toValue === 0) return;
+        for (let c = 0; c < columns.length; c++) {
+            const column = columns[c];
+            if (column.alpha.toValue === 0) continue;
             for (let i = mainMinI; i < mainMaxI; i++) {
                 const y = column.data[i];
                 if (y < mainMinY) mainMinY = y;
                 if (y > mainMaxY) mainMaxY = y;
             }
-        });
+        }
 
         if (mainMaxY === Number.MIN_VALUE) mainMaxY = 1;
 
@@ -551,18 +517,19 @@ export function TChart(container: any) {
         previewMinY = forceMinY !== undefined ? forceMinY : Number.MAX_VALUE;
         previewMaxY = Number.MIN_VALUE;
 
-        columns?.forEach(column => {
-            if (column.alpha.toValue === 0) return;
+        for (let c = 0; c < columns.length; c++) {
+            const column = columns[c];
+            if (column.alpha.toValue === 0) continue;
             if (column.min < previewMinY) previewMinY = column.min;
             if (column.max > previewMaxY) previewMaxY = column.max;
-        });
+        }
 
         if (previewMaxY === Number.MIN_VALUE) previewMaxY = 1;
 
         play(previewRangeY, previewMaxY - previewMinY);
     }
 
-    function setMainMinMax(min: Nullable<number>, max: Nullable<number>) {
+    function setMainMinMax(min: any, max: any) {
         let changed = false;
 
         if (min !== null && mainMinX !== min) {
@@ -586,14 +553,15 @@ export function TChart(container: any) {
         }
     }
 
-    function select(mouseX: Nullable<number>, mouseY: Nullable<number>) {
+    function select(mouseX: any, mouseY: any) {
         if (selectX !== mouseX) {
-            if (selectX === null || mouseX === null) {
+            selectX = mouseX;
+            needRedrawMain = true;
+
+            if (selectX === null) {
                 selectI = -1;
                 popup.style.display = 'none';
             } else {
-                selectX = mouseX;
-                needRedrawMain = true;
                 popup.style.display = 'block';
 
                 let newSelectI = Math.round((mouseX - previewMinX) / intervalX) + 1;
@@ -605,34 +573,28 @@ export function TChart(container: any) {
                     const x = xColumn?.data[selectI];
                     if (popupTitle) popupTitle.innerText = formatDate(x, false);
 
-                    columns?.forEach((column, i) => {
-                        const y = column.data[selectI];
-                        if (popupColumns) popupColumns[i].style.display = column.alpha.toValue === 0 ? 'none' : 'block';
-                        if (popupValues) popupValues[i].innerText = formatNumber(y, false);
-                    });
+                    for (let c = 0; c < columns.length; c++) {
+                        const yColumn = columns[c];
+                        const y = yColumn.data[selectI];
+                        popupColumns[c].style.display = yColumn.alpha.toValue === 0 ? 'none' : 'block';
+                        popupValues[c].innerText = formatNumber(y, false);
+                    }
                 }
 
                 popupBounds = popup.getBoundingClientRect();
                 let popupX = (mainToScreenX(mouseX) / pixelRatio) + popupLeftMargin;
                 if (popupX < 0) popupX = 0;
-                if (popupBounds) {
-                    if (popupX + popupBounds.width > canvasBounds.width) popupX = canvasBounds.width - popupBounds.width;
-                }
+                if (popupX + popupBounds.width > canvasBounds.width) popupX = canvasBounds.width - popupBounds.width;
                 popup.style.left = popupX + 'px';
             }
         }
 
-        if (selectY !== mouseY && mouseY) {
+        if (selectY !== mouseY) {
             selectY = mouseY;
             if (!popupBounds) popupBounds = popup.getBoundingClientRect();
-            let popupY: Nullable<number> = null;
-            if (popupBounds) {
-                popupY = mouseY / pixelRatio + 39 - popupBounds.height - popupTopMargin;
-            }
-            if (popupY) {
-                if (popupY < 0) popupY = mouseY / pixelRatio + 39 + popupTopMargin;
-                popup.style.top = popupY + 'px';
-            }
+            let popupY = mouseY / pixelRatio + 39 - popupBounds.height - popupTopMargin;
+            if (popupY < 0) popupY = mouseY / pixelRatio + 39 + popupTopMargin;
+            popup.style.top = popupY + 'px';
         }
     }
 
@@ -716,10 +678,11 @@ export function TChart(container: any) {
                 if (updateAnimation(mainRangeY)) needRedrawMain = true;
                 if (updateAnimation(previewRangeY)) needRedrawPreview = true;
 
-                columns?.forEach((column, _) => {
-                    if (updateAnimation(column.alpha)) needRedrawMain = true;
-                    if (updateAnimation(column.previewAlpha)) needRedrawPreview = true;
-                });
+                for (let c = 0; c < columns.length; c++) {
+                    const yColumn = columns[c];
+                    if (updateAnimation(yColumn.alpha)) needRedrawMain = true;
+                    if (updateAnimation(yColumn.previewAlpha)) needRedrawPreview = true;
+                }
 
                 // render
 
@@ -738,7 +701,7 @@ export function TChart(container: any) {
         requestAnimationFrame(render);
     }
 
-    function renderTextsX(textX: TextAxises, skipStep: boolean) {
+    function renderTextsX(textX: any, skipStep: any) {
         withDefinedVariables((context) => {
             if (textX.alpha.value > 0) {
                 context.globalAlpha = textX.alpha.value;
@@ -759,14 +722,13 @@ export function TChart(container: any) {
                     } else if (i > 1) {
                         offsetX = -(textXWidth / 2);
                     }
-    
                     context.fillText(formatDate(value, true), x + offsetX, mainHeight + textXMargin);
                 }
             }
-        });
+        })
     }
 
-    function renderTextsY(textY: TextAxises) {
+    function renderTextsY(textY: any) {
         withDefinedVariables((context) => {
             if (textY.alpha.value > 0) {
                 context.globalAlpha = textY.alpha.value;
@@ -777,10 +739,10 @@ export function TChart(container: any) {
                     context.fillText(formatNumber(value, true), paddingHor, y + textYMargin);
                 }
             }
-        });
+        })
     }
 
-    function renderLinesY(textY: TextAxises) {
+    function renderLinesY(textY: any) {
         withDefinedVariables((context) => {
             if (textY.alpha.value > 0) {
                 context.globalAlpha = textY.alpha.value;
@@ -798,7 +760,7 @@ export function TChart(container: any) {
     }
 
     function renderPreview() {
-        withDefinedVariables((context) => {
+        withDefinedVariables((context, colors) => {
             context.clearRect(0, height - previewHeight - 1, width, previewHeight + 1);
 
             // paths
@@ -806,58 +768,55 @@ export function TChart(container: any) {
             previewScaleY = -previewHeight / previewRangeY.value;
             previewOffsetY = height - previewMinY * previewScaleY;
 
-            columns?.forEach((column, _) => {
-                if (column.previewAlpha.value === 0) return;
+            for (let c = 0; c < columns.length; c++) {
+                const yColumn = columns[c];
+
+                if (yColumn.previewAlpha.value === 0) continue;
 
                 let columnScaleY = previewScaleY;
                 let columnOffsetY = previewOffsetY;
 
-                if (column.alpha.toValue === 0) {
-                    if (column.saveScaleY && column.saveOffsetY) {
-                        columnScaleY = column.saveScaleY;
-                        columnOffsetY = column.saveOffsetY;
-                    }
+                if (yColumn.alpha.toValue === 0) {
+                    columnScaleY = yColumn.saveScaleY;
+                    columnOffsetY = yColumn.saveOffsetY;
                 } else {
-                    let columnRangeY = column.max - column.min;
+                    let columnRangeY = yColumn.max - yColumn.min;
                     if (columnRangeY > previewRangeY.value) {
                         columnScaleY = -previewHeight / columnRangeY;
                         columnOffsetY = height - previewMinY * columnScaleY;
                     }
                 }
 
-                context.globalAlpha = column.previewAlpha.value;
+                context.globalAlpha = yColumn.previewAlpha.value;
                 context.lineWidth = previewLineWidth;
-
-                renderPath(column, 1, column.data.length, previewScaleX, columnScaleY, previewOffsetX, columnOffsetY)
-            });
+                renderPath(yColumn, 1, yColumn.data.length, previewScaleX, columnScaleY, previewOffsetX, columnOffsetY)
+            }
 
             // draw preview ui
 
             previewUiMin = previewToScreenX(mainMinX);
             previewUiMax = previewToScreenX(mainMaxX);
 
-            if (colors?.previewAlpha) {
-                context.globalAlpha = colors?.previewAlpha;
-                context.beginPath();
-                context.rect(paddingHor, height - previewHeight, previewUiMin - paddingHor, previewHeight);
-                context.rect(previewUiMax, height - previewHeight, width - previewUiMax - paddingHor, previewHeight);
-                context.fillStyle = colors?.preview;
-                context.fill();
+            context.globalAlpha = colors?.previewAlpha;
+            context.beginPath();
+            context.rect(paddingHor, height - previewHeight, previewUiMin - paddingHor, previewHeight);
+            context.rect(previewUiMax, height - previewHeight, width - previewUiMax - paddingHor, previewHeight);
+            context.fillStyle = colors?.preview;
+            context.fill();
 
-                context.globalAlpha = colors?.previewBorderAlpha;
-                context.beginPath();
-                context.rect(previewUiMin, height - previewHeight, previewUiW, previewHeight);
-                context.rect(previewUiMax - previewUiW, height - previewHeight, previewUiW, previewHeight);
-                context.rect(previewUiMin, height - previewHeight, previewUiMax - previewUiMin, previewUiH);
-                context.rect(previewUiMin, height - previewUiH, previewUiMax - previewUiMin, previewUiH);
-                context.fillStyle = colors?.previewBorder;
-                context.fill();
-            }
-        });
+            context.globalAlpha = colors?.previewBorderAlpha;
+            context.beginPath();
+            context.rect(previewUiMin, height - previewHeight, previewUiW, previewHeight);
+            context.rect(previewUiMax - previewUiW, height - previewHeight, previewUiW, previewHeight);
+            context.rect(previewUiMin, height - previewHeight, previewUiMax - previewUiMin, previewUiH);
+            context.rect(previewUiMin, height - previewUiH, previewUiMax - previewUiMin, previewUiH);
+            context.fillStyle = colors?.previewBorder;
+            context.fill();
+        })
     }
 
     function renderMain() {
-        withDefinedVariables((context) => {
+        withDefinedVariables((context, colors) => {
             context.clearRect(0, 0, width, mainHeight + previewMarginTop);
 
             mainScaleY = -(mainHeight - mainPaddingTop) / mainRangeY.value;
@@ -865,14 +824,14 @@ export function TChart(container: any) {
 
             // lines
 
-            context.strokeStyle = colors?.line as string;
+            context.strokeStyle = colors?.line;
             context.lineWidth = lineWidth;
 
             renderLinesY(oldTextY);
             renderLinesY(newTextY);
 
             context.globalAlpha = 1;
-            context.strokeStyle = colors?.zeroLine as string;
+            context.strokeStyle = colors?.zeroLine;
             context.beginPath();
             context.moveTo(paddingHor, mainHeight);
             context.lineTo(width - paddingHor, mainHeight);
@@ -880,20 +839,22 @@ export function TChart(container: any) {
 
             // paths
 
-            columns?.forEach((column, _) => {
-                if (column.alpha.value === 0) return;
+            for (let c = 0; c < columns.length; c++) {
+                const yColumn = columns[c];
 
-                context.globalAlpha = column.alpha.value;
+                if (yColumn.alpha.value === 0) continue;
+
+                context.globalAlpha = yColumn.alpha.value;
                 context.lineWidth = mainLineWidth;
 
-                renderPath(column, mainMinI, mainMaxI, mainScaleX, mainScaleY, mainOffsetX, mainOffsetY);
-            })
+                renderPath(yColumn, mainMinI, mainMaxI, mainScaleX, mainScaleY, mainOffsetX, mainOffsetY);
+            }
 
             // select
 
             if (selectX) {
                 context.globalAlpha = 1;
-                context.strokeStyle = colors?.selectLine as string;
+                context.strokeStyle = colors?.selectLine;
                 context.lineWidth = lineWidth;
                 context.beginPath();
                 const xMain = mainToScreenX(selectX);
@@ -902,24 +863,23 @@ export function TChart(container: any) {
                 context.stroke();
 
                 const xArc = xColumn?.data[selectI] as number;
-                columns?.forEach((column, _) => {
-                    if (column.alpha.toValue === 0) return;
-                    const y = column.data[selectI];
-                    if (colors?.circleFill) {
-                        context.strokeStyle = data?.colors[column.name as keyof DataSubProperty] as string;
-                        context.fillStyle = colors?.circleFill;
-                        context.lineWidth = circleLineWidth;
-                        context.beginPath();
-                        context.arc(xArc * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
-                        context.stroke();
-                        context.fill();
-                    }
-                });
+                for (let c = 0; c < columns.length; c++) {
+                    const yColumn = columns[c];
+                    if (yColumn.alpha.toValue === 0) continue;
+                    const y = yColumn.data[selectI];
+                    context.strokeStyle = data.colors[yColumn.name];
+                    context.fillStyle = colors?.circleFill;
+                    context.lineWidth = circleLineWidth;
+                    context.beginPath();
+                    context.arc(xArc * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
+                    context.stroke();
+                    context.fill();
+                }
             }
 
             // text
 
-            context.fillStyle = colors?.text as string;
+            context.fillStyle = colors?.text;
             context.font = font;
             let skipStepNew = oldTextX.delta > newTextX.delta;
             renderTextsX(oldTextX, !skipStepNew);
@@ -930,12 +890,12 @@ export function TChart(container: any) {
 
             context.globalAlpha = 1;
             context.fillText(formatNumber(mainMinY), paddingHor, mainHeight + textYMargin);
-        });
+        })
     }
 
-    function renderPath(yColumn: ColumnModified, minI: number, maxI: number, scaleX: number, scaleY: number, offsetX: number, offsetY: number) {
+    function renderPath(yColumn: any, minI: any, maxI: any, scaleX: any, scaleY: any, offsetX: any, offsetY: any) {
         withDefinedVariables((context) => {
-            context.strokeStyle = data?.colors[yColumn.name as keyof DataSubProperty] as string;
+            context.strokeStyle = data.colors[yColumn.name];
 
             context.beginPath();
             context.lineJoin = 'bevel';
@@ -954,18 +914,11 @@ export function TChart(container: any) {
                 context.lineTo(x * scaleX + offsetX, y * scaleY + offsetY);
             }
             context.stroke();
-        })
+        });
     }
 
     const run = () => {
         requestAnimationFrame(render);
-        addEventListener(document, 'mousedown', onMouseDown);
-        addEventListener(document, 'touchstart', onTouchDown);
-        addEventListener(document, 'mousemove', onMouseMove);
-        addEventListener(document, 'touchmove', onTouchMove);
-        addEventListener(document, 'mouseup', onMouseUp);
-        addEventListener(document, 'touchend', onMouseUp);
-        addEventListener(document, 'touchcancel', onMouseUp);
     }
 
     return {
