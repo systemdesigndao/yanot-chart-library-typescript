@@ -39,20 +39,17 @@ export type Columns = {
 
 export interface Data {
     columns: Array<Array<number | string>>;
-    types:   Types;
-    names:   Colors;
-    colors:  Colors;
+    types:   DataSubProperty;
+    names:   DataSubProperty;
+    colors:  DataSubProperty;
 }
 
-export interface Colors {
-    y0: string;
-    y1: string;
-}
-
-export interface Types {
-    y0: string;
-    y1: string;
-    x:  string;
+export interface DataSubProperty {
+    y0:  string;
+    y1:  string;
+    y2?: string;
+    y3?: string;
+    x?:  string;
 }
 
 export function TChart(container: any) {
