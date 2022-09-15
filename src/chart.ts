@@ -1,26 +1,139 @@
 // https://t.me/contest/58
 
 export function TChart(container: any) {
-    var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // non-dynamic variables
+    let MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    let DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const pixelRatio = window.devicePixelRatio;
+    const previewMarginTop = 32 * pixelRatio;
+    const previewHeight = 38 * pixelRatio;
+    const mouseArea = 20 * pixelRatio;
+    const previewUiW = 4 * pixelRatio;
+    const previewUiH = 1 * pixelRatio;
+    const lineWidth = 1 * pixelRatio;
+    const previewLineWidth = 1 * pixelRatio;
+    const mainLineWidth = 2 * pixelRatio;
+    const circleRadius = 3 * pixelRatio;
+    const circleLineWidth = 4 * pixelRatio;
+    const font = (10 * pixelRatio) + 'px Arial';
+    const textYMargin = -6 * pixelRatio;
+    const textXMargin = 16 * pixelRatio;
+    const textXWidth = 30 * pixelRatio;
+    const textYHeight = 45 * pixelRatio;
+    const mainPaddingTop = 21 * pixelRatio;
+    const paddingHor = 11 * pixelRatio;
+    const popupLeftMargin = -25;
+    const popupTopMargin = !('ontouchstart' in window) ? 8 : 40;
+
+    const NONE = 0;
+    const DRAG_START = 1;
+    const DRAG_END = 2;
+    const DRAG_ALL = 3;
+
+
+    // dynamic variables
+
+    let canvas = createElement(container, 'canvas');
+    let context = canvas.getContext('2d');
+    let checksContainer = createElement(container, 'div', 'checks');
+    let popup = createElement(container, 'div', 'popup');
+    popup.style.display = 'none';
+    let popupTitle: any = null;
+
+    let colors: any = null;
+    let data: any = null;
+    let xColumn: any = null;
+    let columns: any = null;
+    let popupColumns: any = null;
+    let popupValues: any = null;
+
+    let width = 0;
+    let height = 0;
+    let mainHeight = 0;
+
+    let textCountX = 6;
+    let textCountY = 6;
+
+    let SCALE_DURATION = 400;
+    let TEXT_X_FADE_DURATION = 200;
+    
+    let intervalX = 0;
+    let forceMinY = 0;
+
+    let mainMinX = 0;
+    let mainMinY = 0;
+    let mainMaxX = 0;
+    let mainMaxY = 0;
+    let mainRangeX = 0;
+    let mainRangeY = createAnimation(0, SCALE_DURATION);
+    let mainScaleX = 1;
+    let mainScaleY = 1;
+    let mainOffsetX = 0;
+    let mainOffsetY = 0;
+
+    let mainMinI = 0;
+    let mainMaxI = 0;
+
+    let previewMinX = 0;
+    let previewMinY = 0;
+    let previewMaxX = 0;
+    let previewMaxY = 0;
+    let previewRangeX = 0;
+    let previewRangeY = createAnimation(0, SCALE_DURATION);
+    let previewScaleX = 1;
+    let previewScaleY = 1;
+    let previewOffsetX = 0;
+    let previewOffsetY = 0;
+
+    let selectX = 0;
+    let selectY = 0;
+    let selectI = 0;
+
+    let oldTextX = {delta: 1, alpha: createAnimation(0, TEXT_X_FADE_DURATION)};
+    let newTextX = {delta: 1, alpha: createAnimation(0, TEXT_X_FADE_DURATION)};
+    let oldTextY = {delta: 1, alpha: createAnimation(0, SCALE_DURATION)};
+    let newTextY = {delta: 1, alpha: createAnimation(0, SCALE_DURATION)};
+
+    let needRedrawMain = true;
+    let needRedrawPreview = true;
+
+    let canvasBounds = {left: 0, top: 0, width: 0, height: 0};
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let newMouseX = 0;
+    let newMouseY = 0;
+    let mouseStartX = 0;
+    let mouseRange = 0;
+    let previewUiMin = 0;
+    let previewUiMax = 0;
+
+    let time = 0;
+
+    let popupBounds: any = null;
+
+    let mouseMode = NONE;
+
+    let destroyed = false;
 
     function formatDate(time: any, short: any) {
-        var date = new Date(time);
-        var s = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
+        let date = new Date(time);
+        let s = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
         if (short) return s;
         return DAY_NAMES[date.getDay()] + ', ' + s;
     }
 
     function formatNumber(n: any, short: boolean = false) {
-        var abs = Math.abs(n);
+        let abs = Math.abs(n);
         if (abs > 1000000000 && short) return (n / 1000000000).toFixed(2) + 'B';
         if (abs > 1000000 && short) return (n / 1000000).toFixed(2) + 'M';
         if (abs > 1000 && short) return (n / 1000).toFixed(1) + 'K';
 
         if (abs > 1) {
-            var s = abs.toFixed(0);
-            var formatted = n < 0 ? '-' : '';
-            for (var i = 0; i < s.length; i++) {
+            let s = abs.toFixed(0);
+            let formatted = n < 0 ? '-' : '';
+            for (let i = 0; i < s.length; i++) {
                 formatted += s.charAt(i);
                 if ((s.length - 1 - i) % 3 === 0) formatted += ' ';
             }
@@ -31,7 +144,7 @@ export function TChart(container: any) {
     }
 
     function createElement(parent: any, tag: any, clazz: any = '') {
-        var element = document.createElement(tag);
+        let element = document.createElement(tag);
         if (clazz) element.classList.add(clazz);
         parent.appendChild(element);
         return element;
@@ -70,124 +183,19 @@ export function TChart(container: any) {
 
     function updateAnimation(anim: any) {
         if (anim.value === anim.toValue) return false;
-        var progress = ((time - anim.startTime) - anim.delay) / anim.duration;
+        let progress = ((time - anim.startTime) - anim.delay) / anim.duration;
         if (progress < 0) progress = 0;
         if (progress > 1) progress = 1;
-        var ease = -progress * (progress - 2);
+        let ease = -progress * (progress - 2);
         anim.value = anim.fromValue + (anim.toValue - anim.fromValue) * ease;
         return true;
     }
-
-    var canvas = createElement(container, 'canvas');
-    var context = canvas.getContext('2d');
-    var checksContainer = createElement(container, 'div', 'checks');
-    var popup = createElement(container, 'div', 'popup');
-    popup.style.display = 'none';
-    var popupTitle: any = null;
-
-    var colors: any = null;
-    var data: any = null;
-    var xColumn: any = null;
-    var columns: any = null;
-    var popupColumns: any = null;
-    var popupValues: any = null;
-
-    var width = 0;
-    var height = 0;
-    var mainHeight = 0;
-
-    var textCountX = 6;
-    var textCountY = 6;
-
-    var SCALE_DURATION = 400;
-    var TEXT_X_FADE_DURATION = 200;
-
-    var pixelRatio = window.devicePixelRatio;
-    var previewMarginTop = 32 * pixelRatio;
-    var previewHeight = 38 * pixelRatio;
-    var mouseArea = 20 * pixelRatio;
-    var previewUiW = 4 * pixelRatio;
-    var previewUiH = 1 * pixelRatio;
-    var lineWidth = 1 * pixelRatio;
-    var previewLineWidth = 1 * pixelRatio;
-    var mainLineWidth = 2 * pixelRatio;
-    var circleRadius = 3 * pixelRatio;
-    var circleLineWidth = 4 * pixelRatio;
-    var font = (10 * pixelRatio) + 'px Arial';
-    var textYMargin = -6 * pixelRatio;
-    var textXMargin = 16 * pixelRatio;
-    var textXWidth = 30 * pixelRatio;
-    var textYHeight = 45 * pixelRatio;
-    var mainPaddingTop = 21 * pixelRatio;
-    var paddingHor = 11 * pixelRatio;
-    var popupLeftMargin = -25;
-    var popupTopMargin = !('ontouchstart' in window) ? 8 : 40;
-
-    var intervalX = 0;
-    var forceMinY = 0;
-
-    var mainMinX = 0;
-    var mainMinY = 0;
-    var mainMaxX = 0;
-    var mainMaxY = 0;
-    var mainRangeX = 0;
-    var mainRangeY = createAnimation(0, SCALE_DURATION);
-    var mainScaleX = 1;
-    var mainScaleY = 1;
-    var mainOffsetX = 0;
-    var mainOffsetY = 0;
-
-    var mainMinI = 0;
-    var mainMaxI = 0;
-
-    var previewMinX = 0;
-    var previewMinY = 0;
-    var previewMaxX = 0;
-    var previewMaxY = 0;
-    var previewRangeX = 0;
-    var previewRangeY = createAnimation(0, SCALE_DURATION);
-    var previewScaleX = 1;
-    var previewScaleY = 1;
-    var previewOffsetX = 0;
-    var previewOffsetY = 0;
-
-    var selectX = 0;
-    var selectY = 0;
-    var selectI = 0;
-
-    var oldTextX = {delta: 1, alpha: createAnimation(0, TEXT_X_FADE_DURATION)};
-    var newTextX = {delta: 1, alpha: createAnimation(0, TEXT_X_FADE_DURATION)};
-    var oldTextY = {delta: 1, alpha: createAnimation(0, SCALE_DURATION)};
-    var newTextY = {delta: 1, alpha: createAnimation(0, SCALE_DURATION)};
-
-    var needRedrawMain = true;
-    var needRedrawPreview = true;
-
-    var canvasBounds = {left: 0, top: 0, width: 0, height: 0};
-
-    var mouseX = 0;
-    var mouseY = 0;
-    var newMouseX = 0;
-    var newMouseY = 0;
-    var mouseStartX = 0;
-    var mouseRange = 0;
-    var previewUiMin = 0;
-    var previewUiMax = 0;
-
-    var time = 0;
-
-    var NONE = 0;
-    var DRAG_START = 1;
-    var DRAG_END = 2;
-    var DRAG_ALL = 3;
-
-    var mouseMode = NONE;
 
     function onMouseDown(e: any) {
         newMouseX = mouseX = (e.clientX - canvasBounds.left) * pixelRatio;
         newMouseY = mouseY = (e.clientY - canvasBounds.top) * pixelRatio;
 
-        var inPreview = (mouseY > height - previewHeight) && (mouseY < height) && (mouseX > -mouseArea) && (mouseX < width + mouseArea);
+        let inPreview = (mouseY > height - previewHeight) && (mouseY < height) && (mouseX > -mouseArea) && (mouseX < width + mouseArea);
         if (inPreview) {
             if (mouseX > previewUiMin - mouseArea && mouseX < previewUiMin + mouseArea / 2) {
                 mouseMode = DRAG_START;
@@ -227,8 +235,6 @@ export function TChart(container: any) {
     addEventListener(document, 'touchend', onMouseUp);
     addEventListener(document, 'touchcancel', onMouseUp);
 
-    var destroyed = false;
-
     const destroy = function () {
         destroyed = true;
         removeAllChild(container);
@@ -240,8 +246,6 @@ export function TChart(container: any) {
         removeEventListener(document, 'touchend', onMouseUp);
         removeEventListener(document, 'touchcancel', onMouseUp);
     };
-
-    requestAnimationFrame(render);
 
     function screenToMainX(screenX: any) {
         return (screenX - mainOffsetX) / mainScaleX;
@@ -270,7 +274,7 @@ export function TChart(container: any) {
 
     const setData = function (newData: any) {
         function findNameOfX(types: any) {
-            for (var name in types) {
+            for (let name in types) {
                 if (types[name] === 'x') return name;
             }
             return null;
@@ -290,12 +294,12 @@ export function TChart(container: any) {
         }
 
         data = newData;
-        var nameOfX = findNameOfX(data.types);
+        let nameOfX = findNameOfX(data.types);
 
-        for (var c = 0; c < data.columns.length; c++) {
-            var columnData = data.columns[c];
-            var name = columnData[0];
-            var column = {
+        for (let c = 0; c < data.columns.length; c++) {
+            let columnData = data.columns[c];
+            let name = columnData[0];
+            let column = {
                 name: name,
                 data: columnData,
                 min: forceMinY !== undefined ? forceMinY : columnData[1],
@@ -309,8 +313,8 @@ export function TChart(container: any) {
                 column.max = columnData[columnData.length - 1];
                 xColumn = column
             } else {
-                for (var i = 2; i < columnData.length; i++) {
-                    var value = columnData[i];
+                for (let i = 2; i < columnData.length; i++) {
+                    let value = columnData[i];
                     if (value < column.min) column.min = value;
                     else if (value > column.max) column.max = value;
                 }
@@ -319,17 +323,17 @@ export function TChart(container: any) {
                 // create checkbox
 
                 if (data.columns.length > 2) {
-                    var label = createElement(checksContainer, 'label', 'checkbox');
+                    let label = createElement(checksContainer, 'label', 'checkbox');
                     label.innerText = data.names[name];
 
-                    var input = createElement(label, 'input');
+                    let input = createElement(label, 'input');
                     input.setAttribute('data-id', columns.length - 1);
                     input.checked = true;
                     input.type = 'checkbox';
                     addEventListener(input, 'change', function (e: any) {
-                        var id = e.currentTarget.getAttribute('data-id');
-                        var checked = e.currentTarget.checked;
-                        var checkedColumn = columns[id];
+                        let id = e.currentTarget.getAttribute('data-id');
+                        let checked = e.currentTarget.checked;
+                        let checkedColumn = columns[id];
                         checkedColumn.saveScaleY = previewScaleY;
                         checkedColumn.saveOffsetY = previewOffsetY;
 
@@ -343,7 +347,7 @@ export function TChart(container: any) {
                         updateMainRangeY();
                     });
 
-                    var span = createElement(label, 'span', 'circle');
+                    let span = createElement(label, 'span', 'circle');
                     span.style.borderColor = data.colors[name];
 
                     span = createElement(label, 'span', 'symbol');
@@ -351,14 +355,14 @@ export function TChart(container: any) {
 
                 // create popup column
 
-                var popupColumn = createElement(popup, 'div', 'column');
+                let popupColumn = createElement(popup, 'div', 'column');
                 popupColumn.style.color = data.colors[name];
                 popupColumns.push(popupColumn);
 
-                var popupValue = createElement(popupColumn, 'div', 'value');
+                let popupValue = createElement(popupColumn, 'div', 'value');
                 popupValues.push(popupValue);
 
-                var popupLabel = createElement(popupColumn, 'div', 'label');
+                let popupLabel = createElement(popupColumn, 'div', 'label');
                 popupLabel.innerText = data.names[name];
             }
         }
@@ -382,9 +386,9 @@ export function TChart(container: any) {
         mainScaleX = (width - paddingHor * 2) / mainRangeX;
         mainOffsetX = -mainMinX * mainScaleX + paddingHor;
 
-        var delta = mainRangeX / intervalX / textCountX;
+        let delta = mainRangeX / intervalX / textCountX;
 
-        var pow = 1;
+        let pow = 1;
         while (pow <= delta) pow *= 2;
         delta = pow;
 
@@ -411,11 +415,11 @@ export function TChart(container: any) {
         mainMinY = forceMinY !== undefined ? forceMinY : Number.MAX_VALUE;
         mainMaxY = Number.MIN_VALUE;
 
-        for (var c = 0; c < columns.length; c++) {
-            var column = columns[c];
+        for (let c = 0; c < columns.length; c++) {
+            let column = columns[c];
             if (column.alpha.toValue === 0) continue;
-            for (var i = mainMinI; i < mainMaxI; i++) {
-                var y = column.data[i];
+            for (let i = mainMinI; i < mainMaxI; i++) {
+                let y = column.data[i];
                 if (y < mainMinY) mainMinY = y;
                 if (y > mainMaxY) mainMaxY = y;
             }
@@ -423,7 +427,7 @@ export function TChart(container: any) {
 
         if (mainMaxY === Number.MIN_VALUE) mainMaxY = 1;
 
-        var range = mainMaxY - mainMinY;
+        let range = mainMaxY - mainMinY;
         if (mainRangeY.toValue !== range) {
             play(mainRangeY, range);
 
@@ -446,8 +450,8 @@ export function TChart(container: any) {
         previewMinY = forceMinY !== undefined ? forceMinY : Number.MAX_VALUE;
         previewMaxY = Number.MIN_VALUE;
 
-        for (var c = 0; c < columns.length; c++) {
-            var column = columns[c];
+        for (let c = 0; c < columns.length; c++) {
+            let column = columns[c];
             if (column.alpha.toValue === 0) continue;
             if (column.min < previewMinY) previewMinY = column.min;
             if (column.max > previewMaxY) previewMaxY = column.max;
@@ -459,7 +463,7 @@ export function TChart(container: any) {
     }
 
     function setMainMinMax(min: any, max: any) {
-        var changed = false;
+        let changed = false;
 
         if (min !== null && mainMinX !== min) {
             mainMinX = min;
@@ -493,25 +497,25 @@ export function TChart(container: any) {
             } else {
                 popup.style.display = 'block';
 
-                var newSelectI = Math.round((mouseX - previewMinX) / intervalX) + 1;
+                let newSelectI = Math.round((mouseX - previewMinX) / intervalX) + 1;
                 if (newSelectI < 1) newSelectI = 1;
                 if (newSelectI > xColumn.data.length - 1) newSelectI = xColumn.data.length - 1;
 
                 if (selectI !== newSelectI) {
                     selectI = newSelectI;
-                    var x = xColumn.data[selectI];
+                    let x = xColumn.data[selectI];
                     popupTitle.innerText = formatDate(x, false);
 
-                    for (var c = 0; c < columns.length; c++) {
-                        var yColumn = columns[c];
-                        var y = yColumn.data[selectI];
+                    for (let c = 0; c < columns.length; c++) {
+                        let yColumn = columns[c];
+                        let y = yColumn.data[selectI];
                         popupColumns[c].style.display = yColumn.alpha.toValue === 0 ? 'none' : 'block';
                         popupValues[c].innerText = formatNumber(y, false);
                     }
                 }
 
-                var popupBounds = popup.getBoundingClientRect();
-                var popupX = (mainToScreenX(mouseX) / pixelRatio) + popupLeftMargin;
+                popupBounds = popup.getBoundingClientRect();
+                let popupX = (mainToScreenX(mouseX) / pixelRatio) + popupLeftMargin;
                 if (popupX < 0) popupX = 0;
                 if (popupX + popupBounds.width > canvasBounds.width) popupX = canvasBounds.width - popupBounds.width;
                 popup.style.left = popupX + 'px';
@@ -521,7 +525,7 @@ export function TChart(container: any) {
         if (selectY !== mouseY) {
             selectY = mouseY;
             if (!popupBounds) popupBounds = popup.getBoundingClientRect();
-            var popupY = mouseY / pixelRatio + 39 - popupBounds.height - popupTopMargin;
+            let popupY = mouseY / pixelRatio + 39 - popupBounds.height - popupTopMargin;
             if (popupY < 0) popupY = mouseY / pixelRatio + 39 + popupTopMargin;
             popup.style.top = popupY + 'px';
         }
@@ -529,8 +533,8 @@ export function TChart(container: any) {
 
     function onResize() {
         canvasBounds = canvas.getBoundingClientRect();
-        var newWidth = canvasBounds.width * pixelRatio;
-        var newHeight = canvasBounds.height * pixelRatio;
+        let newWidth = canvasBounds.width * pixelRatio;
+        let newHeight = canvasBounds.height * pixelRatio;
 
         if (width !== newWidth || height !== newHeight) {
             width = newWidth;
@@ -572,26 +576,26 @@ export function TChart(container: any) {
                 }
 
                 if (mouseMode === DRAG_START) {
-                    var x = mouseX;
+                    let x = mouseX;
                     if (x > previewUiMax - mouseArea * 2) x = previewUiMax - mouseArea * 2;
-                    var newMinX = screenToPreviewX(x);
+                    let newMinX = screenToPreviewX(x);
                     if (newMinX < previewMinX) newMinX = previewMinX;
                     setMainMinMax(newMinX, null);
                 } else if (mouseMode === DRAG_END) {
-                    var x = mouseX;
+                    let x = mouseX;
                     if (x < previewUiMin + mouseArea * 2) x = previewUiMin + mouseArea * 2;
-                    var newMaxX = screenToPreviewX(x);
+                    let newMaxX = screenToPreviewX(x);
                     if (newMaxX > previewMaxX) newMaxX = previewMaxX;
                     setMainMinMax(null, newMaxX);
                 } else if (mouseMode === DRAG_ALL) {
-                    var startX = mouseX + mouseStartX;
-                    var newMinX = screenToPreviewX(startX);
+                    let startX = mouseX + mouseStartX;
+                    let newMinX = screenToPreviewX(startX);
                     if (newMinX < previewMinX) newMinX = previewMinX;
                     if (newMinX > previewMaxX - mouseRange) newMinX = previewMaxX - mouseRange;
                     setMainMinMax(newMinX, newMinX + mouseRange);
                 }
 
-                var inMain = (mouseY > 0) && (mouseY < height - previewHeight) && (mouseX > 0) && (mouseX < width);
+                let inMain = (mouseY > 0) && (mouseY < height - previewHeight) && (mouseX > 0) && (mouseX < width);
                 if (inMain) {
                     select(screenToMainX(Math.floor(mouseX)), Math.floor(mouseY));
                 } else {
@@ -607,8 +611,8 @@ export function TChart(container: any) {
                 if (updateAnimation(mainRangeY)) needRedrawMain = true;
                 if (updateAnimation(previewRangeY)) needRedrawPreview = true;
 
-                for (var c = 0; c < columns.length; c++) {
-                    var yColumn = columns[c];
+                for (let c = 0; c < columns.length; c++) {
+                    let yColumn = columns[c];
                     if (updateAnimation(yColumn.alpha)) needRedrawMain = true;
                     if (updateAnimation(yColumn.previewAlpha)) needRedrawPreview = true;
                 }
@@ -634,17 +638,17 @@ export function TChart(container: any) {
         if (textX.alpha.value > 0) {
             context.globalAlpha = textX.alpha.value;
 
-            var delta = textX.delta;
+            let delta = textX.delta;
             if (skipStep) delta *= 2;
 
-            var endI = Math.min(Math.ceil(mainMaxX / intervalX / delta) * delta, xColumn.data.length);
+            let endI = Math.min(Math.ceil(mainMaxX / intervalX / delta) * delta, xColumn.data.length);
             if (skipStep) endI -= textX.delta;
-            var startI = Math.max(mainMinI - 1, 1);
+            let startI = Math.max(mainMinI - 1, 1);
 
-            for (var i = endI - 1; i >= startI; i -= delta) {
-                var value = xColumn.data[i];
-                var x = mainToScreenX(value);
-                var offsetX = 0;
+            for (let i = endI - 1; i >= startI; i -= delta) {
+                let value = xColumn.data[i];
+                let x = mainToScreenX(value);
+                let offsetX = 0;
                 if (i === xColumn.data.length - 1) {
                     offsetX = -textXWidth;
                 } else if (i > 1) {
@@ -659,9 +663,9 @@ export function TChart(container: any) {
         if (textY.alpha.value > 0) {
             context.globalAlpha = textY.alpha.value;
 
-            for (var i = 1; i < textCountY; i++) {
-                var value = mainMinY + textY.delta * i;
-                var y = mainToScreenY(value);
+            for (let i = 1; i < textCountY; i++) {
+                let value = mainMinY + textY.delta * i;
+                let y = mainToScreenY(value);
                 context.fillText(formatNumber(value, true), paddingHor, y + textYMargin);
             }
         }
@@ -671,9 +675,9 @@ export function TChart(container: any) {
         if (textY.alpha.value > 0) {
             context.globalAlpha = textY.alpha.value;
 
-            for (var i = 1; i < textCountY; i++) {
-                var value = mainMinY + textY.delta * i;
-                var y = mainToScreenY(value);
+            for (let i = 1; i < textCountY; i++) {
+                let value = mainMinY + textY.delta * i;
+                let y = mainToScreenY(value);
                 context.beginPath();
                 context.moveTo(paddingHor, y);
                 context.lineTo(width - paddingHor, y);
@@ -690,19 +694,19 @@ export function TChart(container: any) {
         previewScaleY = -previewHeight / previewRangeY.value;
         previewOffsetY = height - previewMinY * previewScaleY;
 
-        for (var c = 0; c < columns.length; c++) {
-            var yColumn = columns[c];
+        for (let c = 0; c < columns.length; c++) {
+            let yColumn = columns[c];
 
             if (yColumn.previewAlpha.value === 0) continue;
 
-            var columnScaleY = previewScaleY;
-            var columnOffsetY = previewOffsetY;
+            let columnScaleY = previewScaleY;
+            let columnOffsetY = previewOffsetY;
 
             if (yColumn.alpha.toValue === 0) {
                 columnScaleY = yColumn.saveScaleY;
                 columnOffsetY = yColumn.saveOffsetY;
             } else {
-                var columnRangeY = yColumn.max - yColumn.min;
+                let columnRangeY = yColumn.max - yColumn.min;
                 if (columnRangeY > previewRangeY.value) {
                     columnScaleY = -previewHeight / columnRangeY;
                     columnOffsetY = height - previewMinY * columnScaleY;
@@ -759,8 +763,8 @@ export function TChart(container: any) {
 
         // paths
 
-        for (var c = 0; c < columns.length; c++) {
-            var yColumn = columns[c];
+        for (let c = 0; c < columns.length; c++) {
+            let yColumn = columns[c];
 
             if (yColumn.alpha.value === 0) continue;
 
@@ -777,21 +781,21 @@ export function TChart(container: any) {
             context.strokeStyle = colors.selectLine;
             context.lineWidth = lineWidth;
             context.beginPath();
-            var x = mainToScreenX(selectX);
-            context.moveTo(x, 0);
-            context.lineTo(x, mainHeight);
+            let xMain = mainToScreenX(selectX);
+            context.moveTo(xMain, 0);
+            context.lineTo(xMain, mainHeight);
             context.stroke();
 
-            var x = xColumn.data[selectI] as number;
-            for (var c = 0; c < columns.length; c++) {
-                var yColumn = columns[c];
+            let xArc = xColumn.data[selectI] as number;
+            for (let c = 0; c < columns.length; c++) {
+                let yColumn = columns[c];
                 if (yColumn.alpha.toValue === 0) continue;
-                var y = yColumn.data[selectI];
+                let y = yColumn.data[selectI];
                 context.strokeStyle = data.colors[yColumn.name];
                 context.fillStyle = colors.circleFill;
                 context.lineWidth = circleLineWidth;
                 context.beginPath();
-                context.arc(x * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
+                context.arc(xArc * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
                 context.stroke();
                 context.fill();
             }
@@ -801,7 +805,7 @@ export function TChart(container: any) {
 
         context.fillStyle = colors.text;
         context.font = font;
-        var skipStepNew = oldTextX.delta > newTextX.delta;
+        let skipStepNew = oldTextX.delta > newTextX.delta;
         renderTextsX(oldTextX, !skipStepNew);
         renderTextsX(newTextX, skipStepNew);
 
@@ -819,24 +823,29 @@ export function TChart(container: any) {
         context.lineJoin = 'bevel';
         context.lineCap = 'butt';
 
-        var firstX = xColumn.data[minI];
-        var firstY = yColumn.data[minI];
+        let firstX = xColumn.data[minI];
+        let firstY = yColumn.data[minI];
         context.moveTo(firstX * scaleX + offsetX, firstY * scaleY + offsetY);
 
-        var step = Math.floor((maxI - minI) / (width - paddingHor * 2));
+        let step = Math.floor((maxI - minI) / (width - paddingHor * 2));
         if (step < 1) step = 1;
 
-        for (var i = minI + 1; i < maxI; i += step) {
-            var x = xColumn.data[i];
-            var y = yColumn.data[i];
+        for (let i = minI + 1; i < maxI; i += step) {
+            let x = xColumn.data[i];
+            let y = yColumn.data[i];
             context.lineTo(x * scaleX + offsetX, y * scaleY + offsetY);
         }
         context.stroke();
     }
 
+    const run = () => {
+        requestAnimationFrame(render);
+    }
+
     return {
         destroy, 
         setData,
-        setColors
+        setColors,
+        run
     }
 }

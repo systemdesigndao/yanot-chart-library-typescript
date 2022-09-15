@@ -19,21 +19,21 @@ var LIGHT_COLORS = {
   previewBorderAlpha: 0.5
 };
 
-var charts = [];
+const charts: ReturnType<typeof TChart>[]  = [];
 
-
-for (let i = 0; i < data.length; i++) {
-  var d = data[i];
-  var chartContainer = document.createElement('div');
+data.forEach((slot, i) => {
+  const chartContainer = document.createElement('div');
   chartContainer.classList.add('tchart');
   app.appendChild(chartContainer);
 
-  var h1 = document.createElement('h1');
+  const h1 = document.createElement('h1');
   h1.innerText = 'Chart #' + i;
   chartContainer.appendChild(h1);
 
-  var chart = TChart(chartContainer);
+  const chart = TChart(chartContainer);
   chart.setColors(LIGHT_COLORS);
-  chart.setData(d);
+  chart.setData(slot);
   charts.push(chart);
-}
+})
+
+charts.forEach(chart => chart.run());
