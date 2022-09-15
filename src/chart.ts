@@ -425,7 +425,6 @@ export function TChart(container: any) {
                     input.checked = true;
                     input.type = 'checkbox';
                     addEventListener(input, 'change', function (e) {
-                        console.log(e);
                         const id = e.currentTarget.getAttribute('data-id');
                         if (columns && columns[id]) {
                             const checked = e.currentTarget.checked;
