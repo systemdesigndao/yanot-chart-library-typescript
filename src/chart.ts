@@ -19,22 +19,8 @@ export type ModifiedColumn = {
     data: any;
     min: any;
     max: any;
-    alpha: {
-        fromValue: any;
-        toValue: any;
-        value: any;
-        startTime: number;
-        duration: any;
-        delay: number;
-    };
-    previewAlpha: {
-        fromValue: any;
-        toValue: any;
-        value: any;
-        startTime: number;
-        duration: any;
-        delay: number;
-    };
+    alpha: Animation;
+    previewAlpha: Animation;
     saveScaleY?: number;
     saveOffsetY?: number;
     columnScaleY?: number;
@@ -64,7 +50,7 @@ export interface Types {
     x:  string;
 }
 
-export type UpdateAnimation = {
+export type Animation = {
     fromValue: number;
     toValue: number;
     value: number;
@@ -256,7 +242,7 @@ export function TChart(container: HTMLElement) {
         element.removeEventListener(event, listener);
     }
 
-    function createAnimation(value: number, duration: number) {
+    function createAnimation(value: number, duration: number): Animation {
         return {
             fromValue: value,
             toValue: value,
@@ -267,13 +253,13 @@ export function TChart(container: HTMLElement) {
         }
     }
 
-    function play(anim: UpdateAnimation, toValue: number) {
+    function play(anim: Animation, toValue: number) {
         anim.startTime = time;
         anim.toValue = toValue;
         anim.fromValue = anim.value;
     }
 
-    function updateAnimation(anim: UpdateAnimation): UpdateAnimation | boolean {
+    function updateAnimation(anim: Animation) {
         if (anim.value === anim.toValue) return false;
         let progress = ((time - anim.startTime) - anim.delay) / anim.duration;
         if (progress < 0) progress = 0;
