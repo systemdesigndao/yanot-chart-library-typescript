@@ -85,7 +85,7 @@ export type TextAxises = {
     };
 };
 
-export function TChart(container: any) {
+export function TChart(container: HTMLElement) {
     // non-dynamic variables
 
     let MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -235,7 +235,7 @@ export function TChart(container: any) {
         return n.toString()
     }
 
-    function createElement<T>(parent: any, tag: any, clazz = ''): T {
+    function createElement<T>(parent: HTMLElement, tag: string, clazz: string = ''): T {
         const element = document.createElement(tag);
         if (clazz) element.classList.add(clazz);
         parent.appendChild(element);
@@ -357,9 +357,9 @@ export function TChart(container: any) {
     };
 
     const setData = function (newData: Data) {
-        function findNameOfX(types: any) {
+        function findNameOfX(types: Types) {
             for (const name in types) {
-                if (types[name] === 'x') return name;
+                if (types[name as keyof Types] === 'x') return name;
             }
             return null;
         }
@@ -414,7 +414,7 @@ export function TChart(container: any) {
                     input.setAttribute('data-id', (columns.length - 1).toString());
                     input.checked = true;
                     input.type = 'checkbox';
-                    addEventListener(input, 'change', function (e: any) {
+                    addEventListener(input, 'change', function (e) {
                         const id = e.currentTarget.getAttribute('data-id');
                         const checked = e.currentTarget.checked;
                         const checkedColumn = columns[id];
@@ -749,7 +749,7 @@ export function TChart(container: any) {
         })
     }
 
-    function renderTextsY(textY: any) {
+    function renderTextsY(textY: TextAxises) {
         withDefinedVariables((context) => {
             if (textY.alpha.value > 0) {
                 context.globalAlpha = textY.alpha.value;
