@@ -118,14 +118,14 @@ export function TChart(container: any) {
     let destroyed = false;
 
     function formatDate(time: any, short: any) {
-        let date = new Date(time);
-        let s = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
+        const date = new Date(time);
+        const s = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
         if (short) return s;
         return DAY_NAMES[date.getDay()] + ', ' + s;
     }
 
     function formatNumber(n: any, short: boolean = false) {
-        let abs = Math.abs(n);
+        const abs = Math.abs(n);
         if (abs > 1000000000 && short) return (n / 1000000000).toFixed(2) + 'B';
         if (abs > 1000000 && short) return (n / 1000000).toFixed(2) + 'M';
         if (abs > 1000 && short) return (n / 1000).toFixed(1) + 'K';
@@ -144,7 +144,7 @@ export function TChart(container: any) {
     }
 
     function createElement(parent: any, tag: any, clazz: any = '') {
-        let element = document.createElement(tag);
+        const element = document.createElement(tag);
         if (clazz) element.classList.add(clazz);
         parent.appendChild(element);
         return element;
@@ -186,7 +186,7 @@ export function TChart(container: any) {
         let progress = ((time - anim.startTime) - anim.delay) / anim.duration;
         if (progress < 0) progress = 0;
         if (progress > 1) progress = 1;
-        let ease = -progress * (progress - 2);
+        const ease = -progress * (progress - 2);
         anim.value = anim.fromValue + (anim.toValue - anim.fromValue) * ease;
         return true;
     }
@@ -195,7 +195,7 @@ export function TChart(container: any) {
         newMouseX = mouseX = (e.clientX - canvasBounds.left) * pixelRatio;
         newMouseY = mouseY = (e.clientY - canvasBounds.top) * pixelRatio;
 
-        let inPreview = (mouseY > height - previewHeight) && (mouseY < height) && (mouseX > -mouseArea) && (mouseX < width + mouseArea);
+        const inPreview = (mouseY > height - previewHeight) && (mouseY < height) && (mouseX > -mouseArea) && (mouseX < width + mouseArea);
         if (inPreview) {
             if (mouseX > previewUiMin - mouseArea && mouseX < previewUiMin + mouseArea / 2) {
                 mouseMode = DRAG_START;
@@ -274,7 +274,7 @@ export function TChart(container: any) {
 
     const setData = function (newData: any) {
         function findNameOfX(types: any) {
-            for (let name in types) {
+            for (const name in types) {
                 if (types[name] === 'x') return name;
             }
             return null;
@@ -294,12 +294,12 @@ export function TChart(container: any) {
         }
 
         data = newData;
-        let nameOfX = findNameOfX(data.types);
+        const nameOfX = findNameOfX(data.types);
 
         for (let c = 0; c < data.columns.length; c++) {
-            let columnData = data.columns[c];
-            let name = columnData[0];
-            let column = {
+            const columnData = data.columns[c];
+            const name = columnData[0];
+            const column = {
                 name: name,
                 data: columnData,
                 min: forceMinY !== undefined ? forceMinY : columnData[1],
@@ -314,7 +314,7 @@ export function TChart(container: any) {
                 xColumn = column
             } else {
                 for (let i = 2; i < columnData.length; i++) {
-                    let value = columnData[i];
+                    const value = columnData[i];
                     if (value < column.min) column.min = value;
                     else if (value > column.max) column.max = value;
                 }
@@ -323,17 +323,17 @@ export function TChart(container: any) {
                 // create checkbox
 
                 if (data.columns.length > 2) {
-                    let label = createElement(checksContainer, 'label', 'checkbox');
+                    const label = createElement(checksContainer, 'label', 'checkbox');
                     label.innerText = data.names[name];
 
-                    let input = createElement(label, 'input');
+                    const input = createElement(label, 'input');
                     input.setAttribute('data-id', columns.length - 1);
                     input.checked = true;
                     input.type = 'checkbox';
                     addEventListener(input, 'change', function (e: any) {
-                        let id = e.currentTarget.getAttribute('data-id');
-                        let checked = e.currentTarget.checked;
-                        let checkedColumn = columns[id];
+                        const id = e.currentTarget.getAttribute('data-id');
+                        const checked = e.currentTarget.checked;
+                        const checkedColumn = columns[id];
                         checkedColumn.saveScaleY = previewScaleY;
                         checkedColumn.saveOffsetY = previewOffsetY;
 
@@ -355,14 +355,14 @@ export function TChart(container: any) {
 
                 // create popup column
 
-                let popupColumn = createElement(popup, 'div', 'column');
+                const popupColumn = createElement(popup, 'div', 'column');
                 popupColumn.style.color = data.colors[name];
                 popupColumns.push(popupColumn);
 
-                let popupValue = createElement(popupColumn, 'div', 'value');
+                const popupValue = createElement(popupColumn, 'div', 'value');
                 popupValues.push(popupValue);
 
-                let popupLabel = createElement(popupColumn, 'div', 'label');
+                const popupLabel = createElement(popupColumn, 'div', 'label');
                 popupLabel.innerText = data.names[name];
             }
         }
@@ -416,10 +416,10 @@ export function TChart(container: any) {
         mainMaxY = Number.MIN_VALUE;
 
         for (let c = 0; c < columns.length; c++) {
-            let column = columns[c];
+            const column = columns[c];
             if (column.alpha.toValue === 0) continue;
             for (let i = mainMinI; i < mainMaxI; i++) {
-                let y = column.data[i];
+                const y = column.data[i];
                 if (y < mainMinY) mainMinY = y;
                 if (y > mainMaxY) mainMaxY = y;
             }
@@ -451,7 +451,7 @@ export function TChart(container: any) {
         previewMaxY = Number.MIN_VALUE;
 
         for (let c = 0; c < columns.length; c++) {
-            let column = columns[c];
+            const column = columns[c];
             if (column.alpha.toValue === 0) continue;
             if (column.min < previewMinY) previewMinY = column.min;
             if (column.max > previewMaxY) previewMaxY = column.max;
@@ -503,12 +503,12 @@ export function TChart(container: any) {
 
                 if (selectI !== newSelectI) {
                     selectI = newSelectI;
-                    let x = xColumn.data[selectI];
+                    const x = xColumn.data[selectI];
                     popupTitle.innerText = formatDate(x, false);
 
                     for (let c = 0; c < columns.length; c++) {
-                        let yColumn = columns[c];
-                        let y = yColumn.data[selectI];
+                        const yColumn = columns[c];
+                        const y = yColumn.data[selectI];
                         popupColumns[c].style.display = yColumn.alpha.toValue === 0 ? 'none' : 'block';
                         popupValues[c].innerText = formatNumber(y, false);
                     }
@@ -612,7 +612,7 @@ export function TChart(container: any) {
                 if (updateAnimation(previewRangeY)) needRedrawPreview = true;
 
                 for (let c = 0; c < columns.length; c++) {
-                    let yColumn = columns[c];
+                    const yColumn = columns[c];
                     if (updateAnimation(yColumn.alpha)) needRedrawMain = true;
                     if (updateAnimation(yColumn.previewAlpha)) needRedrawPreview = true;
                 }
@@ -643,11 +643,11 @@ export function TChart(container: any) {
 
             let endI = Math.min(Math.ceil(mainMaxX / intervalX / delta) * delta, xColumn.data.length);
             if (skipStep) endI -= textX.delta;
-            let startI = Math.max(mainMinI - 1, 1);
+            const startI = Math.max(mainMinI - 1, 1);
 
             for (let i = endI - 1; i >= startI; i -= delta) {
-                let value = xColumn.data[i];
-                let x = mainToScreenX(value);
+                const value = xColumn.data[i];
+                const x = mainToScreenX(value);
                 let offsetX = 0;
                 if (i === xColumn.data.length - 1) {
                     offsetX = -textXWidth;
@@ -676,8 +676,8 @@ export function TChart(container: any) {
             context.globalAlpha = textY.alpha.value;
 
             for (let i = 1; i < textCountY; i++) {
-                let value = mainMinY + textY.delta * i;
-                let y = mainToScreenY(value);
+                const value = mainMinY + textY.delta * i;
+                const y = mainToScreenY(value);
                 context.beginPath();
                 context.moveTo(paddingHor, y);
                 context.lineTo(width - paddingHor, y);
@@ -695,7 +695,7 @@ export function TChart(container: any) {
         previewOffsetY = height - previewMinY * previewScaleY;
 
         for (let c = 0; c < columns.length; c++) {
-            let yColumn = columns[c];
+            const yColumn = columns[c];
 
             if (yColumn.previewAlpha.value === 0) continue;
 
@@ -764,7 +764,7 @@ export function TChart(container: any) {
         // paths
 
         for (let c = 0; c < columns.length; c++) {
-            let yColumn = columns[c];
+            const yColumn = columns[c];
 
             if (yColumn.alpha.value === 0) continue;
 
@@ -781,16 +781,16 @@ export function TChart(container: any) {
             context.strokeStyle = colors.selectLine;
             context.lineWidth = lineWidth;
             context.beginPath();
-            let xMain = mainToScreenX(selectX);
+            const xMain = mainToScreenX(selectX);
             context.moveTo(xMain, 0);
             context.lineTo(xMain, mainHeight);
             context.stroke();
 
-            let xArc = xColumn.data[selectI] as number;
+            const xArc = xColumn.data[selectI] as number;
             for (let c = 0; c < columns.length; c++) {
-                let yColumn = columns[c];
+                const yColumn = columns[c];
                 if (yColumn.alpha.toValue === 0) continue;
-                let y = yColumn.data[selectI];
+                const y = yColumn.data[selectI];
                 context.strokeStyle = data.colors[yColumn.name];
                 context.fillStyle = colors.circleFill;
                 context.lineWidth = circleLineWidth;
@@ -831,8 +831,8 @@ export function TChart(container: any) {
         if (step < 1) step = 1;
 
         for (let i = minI + 1; i < maxI; i += step) {
-            let x = xColumn.data[i];
-            let y = yColumn.data[i];
+            const x = xColumn.data[i];
+            const y = yColumn.data[i];
             context.lineTo(x * scaleX + offsetX, y * scaleY + offsetY);
         }
         context.stroke();
