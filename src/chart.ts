@@ -243,7 +243,7 @@ export function TChart(container: any) {
         element.removeEventListener(event, listener);
     }
 
-    function createAnimation(value: any, duration: any) {
+    function createAnimation(value: number, duration: number) {
         return {
             fromValue: value,
             toValue: value,
