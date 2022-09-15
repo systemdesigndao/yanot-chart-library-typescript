@@ -1,5 +1,5 @@
 import './style.css'
-import { TChart } from './chart';
+import { TChart, ThemeColors } from './chart';
 import data from './data.json';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -7,7 +7,7 @@ app.innerHTML = `
 <div id="charts"></div>
 `;
 
-var LIGHT_COLORS = {
+var LIGHT_COLORS: ThemeColors = {
   circleFill: '#ffffff',
   line: '#f2f4f5',
   zeroLine: '#ecf0f3',

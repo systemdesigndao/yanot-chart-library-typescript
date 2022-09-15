@@ -1,5 +1,60 @@
 // https://t.me/contest/58
 
+type Nullable<T> = null | T;
+
+export type ThemeColors = {
+    circleFill: string;
+    line: string;
+    zeroLine: string;
+    selectLine: string;
+    text: string;
+    preview: string;
+    previewAlpha: number;
+    previewBorder: string;
+    previewBorderAlpha: number;
+};
+
+export type Columns = {
+    name: any;
+    data: any;
+    min: any;
+    max: any;
+    alpha: {
+        fromValue: any;
+        toValue: any;
+        value: any;
+        startTime: number;
+        duration: any;
+        delay: number;
+    };
+    previewAlpha: {
+        fromValue: any;
+        toValue: any;
+        value: any;
+        startTime: number;
+        duration: any;
+        delay: number;
+    };
+};
+
+export interface Data {
+    columns: Array<Array<number | string>>;
+    types:   Types;
+    names:   Colors;
+    colors:  Colors;
+}
+
+export interface Colors {
+    y0: string;
+    y1: string;
+}
+
+export interface Types {
+    y0: string;
+    y1: string;
+    x:  string;
+}
+
 export function TChart(container: any) {
     // non-dynamic variables
     let MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -39,11 +94,11 @@ export function TChart(container: any) {
     let checksContainer = createElement(container, 'div', 'checks');
     let popup = createElement(container, 'div', 'popup');
     popup.style.display = 'none';
-    let popupTitle: any = null;
+    let popupTitle: Nullable<HTMLDivElement> = null;
 
-    let colors: any = null;
-    let data: any = null;
-    let xColumn: any = null;
+    let colors: Nullable<ThemeColors> = null;
+    let data: Nullable<any> = null;
+    let xColumn: Nullable<Columns> = null;
     let columns: any = null;
     let popupColumns: any = null;
     let popupValues: any = null;
@@ -267,12 +322,13 @@ export function TChart(container: any) {
         return x * previewScaleX + previewOffsetX;
     }
 
-    const setColors = function (newColors: any) {
+    const setColors = function (newColors: ThemeColors) {
         colors = newColors;
         needRedrawMain = needRedrawPreview = true;
     };
 
     const setData = function (newData: any) {
+        console.log(newData);
         function findNameOfX(types: any) {
             for (const name in types) {
                 if (types[name] === 'x') return name;
@@ -367,9 +423,9 @@ export function TChart(container: any) {
             }
         }
 
-        intervalX = xColumn.data[2] - xColumn.data[1];
-        previewMinX = xColumn.min;
-        previewMaxX = xColumn.max;
+        intervalX = xColumn?.data[2] - xColumn?.data[1];
+        previewMinX = xColumn?.min;
+        previewMaxX = xColumn?.max;
         previewRangeX = previewMaxX - previewMinX;
 
         onResize();
@@ -475,7 +531,7 @@ export function TChart(container: any) {
         if (max !== null && mainMaxX !== max) {
             mainMaxX = max;
             mainMaxI = Math.ceil((mainMaxX - previewMinX + paddingHor / mainScaleX) / intervalX) + 2;
-            if (mainMaxI > xColumn.data.length) mainMaxI = xColumn.data.length;
+            if (mainMaxI > xColumn?.data.length) mainMaxI = xColumn?.data.length;
             changed = true;
         }
 
@@ -499,12 +555,12 @@ export function TChart(container: any) {
 
                 let newSelectI = Math.round((mouseX - previewMinX) / intervalX) + 1;
                 if (newSelectI < 1) newSelectI = 1;
-                if (newSelectI > xColumn.data.length - 1) newSelectI = xColumn.data.length - 1;
+                if (newSelectI > xColumn?.data.length - 1) newSelectI = xColumn?.data.length - 1;
 
                 if (selectI !== newSelectI) {
                     selectI = newSelectI;
-                    const x = xColumn.data[selectI];
-                    popupTitle.innerText = formatDate(x, false);
+                    const x = xColumn?.data[selectI];
+                    if (popupTitle) popupTitle.innerText = formatDate(x, false);
 
                     for (let c = 0; c < columns.length; c++) {
                         const yColumn = columns[c];
@@ -554,7 +610,7 @@ export function TChart(container: any) {
         }
     }
 
-    function render(t: any) {
+    function render(t: DOMHighResTimeStamp) {
         if (destroyed) return;
         time = t;
 
@@ -641,15 +697,15 @@ export function TChart(container: any) {
             let delta = textX.delta;
             if (skipStep) delta *= 2;
 
-            let endI = Math.min(Math.ceil(mainMaxX / intervalX / delta) * delta, xColumn.data.length);
+            let endI = Math.min(Math.ceil(mainMaxX / intervalX / delta) * delta, xColumn?.data.length);
             if (skipStep) endI -= textX.delta;
             const startI = Math.max(mainMinI - 1, 1);
 
             for (let i = endI - 1; i >= startI; i -= delta) {
-                const value = xColumn.data[i];
+                const value = xColumn?.data[i];
                 const x = mainToScreenX(value);
                 let offsetX = 0;
-                if (i === xColumn.data.length - 1) {
+                if (i === xColumn?.data.length - 1) {
                     offsetX = -textXWidth;
                 } else if (i > 1) {
                     offsetX = -(textXWidth / 2);
@@ -723,20 +779,20 @@ export function TChart(container: any) {
         previewUiMin = previewToScreenX(mainMinX);
         previewUiMax = previewToScreenX(mainMaxX);
 
-        context.globalAlpha = colors.previewAlpha;
+        context.globalAlpha = colors?.previewAlpha;
         context.beginPath();
         context.rect(paddingHor, height - previewHeight, previewUiMin - paddingHor, previewHeight);
         context.rect(previewUiMax, height - previewHeight, width - previewUiMax - paddingHor, previewHeight);
-        context.fillStyle = colors.preview;
+        context.fillStyle = colors?.preview;
         context.fill();
 
-        context.globalAlpha = colors.previewBorderAlpha;
+        context.globalAlpha = colors?.previewBorderAlpha;
         context.beginPath();
         context.rect(previewUiMin, height - previewHeight, previewUiW, previewHeight);
         context.rect(previewUiMax - previewUiW, height - previewHeight, previewUiW, previewHeight);
         context.rect(previewUiMin, height - previewHeight, previewUiMax - previewUiMin, previewUiH);
         context.rect(previewUiMin, height - previewUiH, previewUiMax - previewUiMin, previewUiH);
-        context.fillStyle = colors.previewBorder;
+        context.fillStyle = colors?.previewBorder;
         context.fill();
     }
 
@@ -748,14 +804,14 @@ export function TChart(container: any) {
 
         // lines
 
-        context.strokeStyle = colors.line;
+        context.strokeStyle = colors?.line;
         context.lineWidth = lineWidth;
 
         renderLinesY(oldTextY);
         renderLinesY(newTextY);
 
         context.globalAlpha = 1;
-        context.strokeStyle = colors.zeroLine;
+        context.strokeStyle = colors?.zeroLine;
         context.beginPath();
         context.moveTo(paddingHor, mainHeight);
         context.lineTo(width - paddingHor, mainHeight);
@@ -778,7 +834,7 @@ export function TChart(container: any) {
 
         if (selectX) {
             context.globalAlpha = 1;
-            context.strokeStyle = colors.selectLine;
+            context.strokeStyle = colors?.selectLine;
             context.lineWidth = lineWidth;
             context.beginPath();
             const xMain = mainToScreenX(selectX);
@@ -786,13 +842,13 @@ export function TChart(container: any) {
             context.lineTo(xMain, mainHeight);
             context.stroke();
 
-            const xArc = xColumn.data[selectI] as number;
+            const xArc = xColumn?.data[selectI] as number;
             for (let c = 0; c < columns.length; c++) {
                 const yColumn = columns[c];
                 if (yColumn.alpha.toValue === 0) continue;
                 const y = yColumn.data[selectI];
                 context.strokeStyle = data.colors[yColumn.name];
-                context.fillStyle = colors.circleFill;
+                context.fillStyle = colors?.circleFill;
                 context.lineWidth = circleLineWidth;
                 context.beginPath();
                 context.arc(xArc * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
@@ -803,7 +859,7 @@ export function TChart(container: any) {
 
         // text
 
-        context.fillStyle = colors.text;
+        context.fillStyle = colors?.text;
         context.font = font;
         let skipStepNew = oldTextX.delta > newTextX.delta;
         renderTextsX(oldTextX, !skipStepNew);
@@ -823,7 +879,7 @@ export function TChart(container: any) {
         context.lineJoin = 'bevel';
         context.lineCap = 'butt';
 
-        let firstX = xColumn.data[minI];
+        let firstX = xColumn?.data[minI];
         let firstY = yColumn.data[minI];
         context.moveTo(firstX * scaleX + offsetX, firstY * scaleY + offsetY);
 
@@ -831,7 +887,7 @@ export function TChart(container: any) {
         if (step < 1) step = 1;
 
         for (let i = minI + 1; i < maxI; i += step) {
-            const x = xColumn.data[i];
+            const x = xColumn?.data[i];
             const y = yColumn.data[i];
             context.lineTo(x * scaleX + offsetX, y * scaleY + offsetY);
         }
