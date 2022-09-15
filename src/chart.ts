@@ -14,7 +14,7 @@ export type ThemeColors = {
     previewBorderAlpha: number;
 };
 
-export type Columns = {
+export type ModifiedColumn = {
     name: any;
     data: any;
     min: any;
@@ -35,6 +35,10 @@ export type Columns = {
         duration: any;
         delay: number;
     };
+    saveScaleY?: number;
+    saveOffsetY?: number;
+    columnScaleY?: number;
+    columnOffsetY?: number;
 };
 
 export interface Data {
@@ -60,8 +64,30 @@ export interface Types {
     x:  string;
 }
 
+export type UpdateAnimation = {
+    fromValue: number;
+    toValue: number;
+    value: number;
+    startTime: number;
+    duration: number;
+    delay: number;
+};
+
+export type TextAxises = {
+    delta: number;
+    alpha: {
+        fromValue: number;
+        toValue: number;
+        value: number;
+        startTime: number;
+        duration: number;
+        delay: number;
+    };
+};
+
 export function TChart(container: any) {
     // non-dynamic variables
+
     let MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     let DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -103,10 +129,10 @@ export function TChart(container: any) {
 
     let colors: Nullable<ThemeColors> = null;
     let data: Nullable<Data> = null;
-    let xColumn: Nullable<Columns> = null;
-    let columns: any = null;
-    let popupColumns: any = null;
-    let popupValues: any = null;
+    let xColumn: Nullable<ModifiedColumn> = null;
+    let columns: ModifiedColumn[] = [];
+    let popupColumns: HTMLDivElement[] = [];
+    let popupValues: HTMLDivElement[] = [];
 
     let width = 0;
     let height = 0;
@@ -146,9 +172,9 @@ export function TChart(container: any) {
     let previewOffsetX = 0;
     let previewOffsetY = 0;
 
-    let selectX = 0;
-    let selectY = 0;
-    let selectI = 0;
+    let selectX: Nullable<number> = 0;
+    let selectY: Nullable<number> = 0;
+    let selectI: Nullable<number> = 0;
 
     let oldTextX = {delta: 1, alpha: createAnimation(0, TEXT_X_FADE_DURATION)};
     let newTextX = {delta: 1, alpha: createAnimation(0, TEXT_X_FADE_DURATION)};
@@ -171,26 +197,26 @@ export function TChart(container: any) {
 
     let time = 0;
 
-    let popupBounds: any = null;
+    let popupBounds: Nullable<DOMRect> = null;
 
     let mouseMode = NONE;
 
     let destroyed = false;
 
-    function withDefinedVariables(cb: (context: CanvasRenderingContext2D, colors: ThemeColors) => void) {
-        if (context && colors) {
-            return cb(context, colors);
+    function withDefinedVariables(cb: (context: CanvasRenderingContext2D, colors: ThemeColors, selectI: Nullable<number>) => void) {
+        if (context && colors && selectI) {
+            return cb(context, colors, selectI);
         }
     }
 
-    function formatDate(time: any, short: any) {
+    function formatDate(time: number, short = false) {
         const date = new Date(time);
         const s = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
         if (short) return s;
         return DAY_NAMES[date.getDay()] + ', ' + s;
     }
 
-    function formatNumber(n: any, short: boolean = false) {
+    function formatNumber(n: number, short = false) {
         const abs = Math.abs(n);
         if (abs > 1000000000 && short) return (n / 1000000000).toFixed(2) + 'B';
         if (abs > 1000000 && short) return (n / 1000000).toFixed(2) + 'M';
@@ -216,21 +242,21 @@ export function TChart(container: any) {
         return <T>element;
     }
 
-    function removeAllChild(parent: any) {
+    function removeAllChild(parent: HTMLElement) {
         while (parent.firstChild) {
             parent.removeChild(parent.firstChild);
         }
     }
 
-    function addEventListener(element: any, event: any, listener: any) {
+    function addEventListener(element: Document | HTMLElement, event: string, listener: (this: Document, ev: any) => any) {
         element.addEventListener(event, listener, false);
     }
 
-    function removeEventListener(element: any, event: any, listener: any) {
+    function removeEventListener(element: Document | HTMLElement, event: string, listener: (this: Document, ev: any) => any) {
         element.removeEventListener(event, listener);
     }
 
-    function createAnimation(value: any, duration: any) {
+    function createAnimation(value: number, duration: number) {
         return {
             fromValue: value,
             toValue: value,
@@ -241,13 +267,13 @@ export function TChart(container: any) {
         }
     }
 
-    function play(anim: any, toValue: any) {
+    function play(anim: UpdateAnimation, toValue: number) {
         anim.startTime = time;
         anim.toValue = toValue;
         anim.fromValue = anim.value;
     }
 
-    function updateAnimation(anim: any) {
+    function updateAnimation(anim: UpdateAnimation): UpdateAnimation | boolean {
         if (anim.value === anim.toValue) return false;
         let progress = ((time - anim.startTime) - anim.delay) / anim.duration;
         if (progress < 0) progress = 0;
@@ -257,7 +283,7 @@ export function TChart(container: any) {
         return true;
     }
 
-    function onMouseDown(e: any) {
+    function onMouseDown(e: MouseEvent | Touch) {
         newMouseX = mouseX = (e.clientX - canvasBounds.left) * pixelRatio;
         newMouseY = mouseY = (e.clientY - canvasBounds.top) * pixelRatio;
 
@@ -276,16 +302,16 @@ export function TChart(container: any) {
         }
     }
 
-    function onTouchDown(e: any) {
+    function onTouchDown(e: TouchEvent) {
         onMouseDown(e.touches[0])
     }
 
-    function onMouseMove(e: any) {
+    function onMouseMove(e: MouseEvent | Touch) {
         newMouseX = (e.clientX - canvasBounds.left) * pixelRatio;
         newMouseY = (e.clientY - canvasBounds.top) * pixelRatio;
     }
 
-    function onTouchMove(e: any) {
+    function onTouchMove(e: TouchEvent) {
         onMouseMove(e.touches[0])
     }
 
@@ -305,23 +331,23 @@ export function TChart(container: any) {
         removeEventListener(document, 'touchcancel', onMouseUp);
     };
 
-    function screenToMainX(screenX: any) {
+    function screenToMainX(screenX: number) {
         return (screenX - mainOffsetX) / mainScaleX;
     }
 
-    function mainToScreenX(x: any) {
+    function mainToScreenX(x: number) {
         return x * mainScaleX + mainOffsetX;
     }
 
-    function mainToScreenY(y: any) {
+    function mainToScreenY(y: number) {
         return y * mainScaleY + mainOffsetY;
     }
 
-    function screenToPreviewX(screenX: any) {
+    function screenToPreviewX(screenX: number) {
         return (screenX - previewOffsetX) / previewScaleX;
     }
 
-    function previewToScreenX(x: any) {
+    function previewToScreenX(x: number) {
         return x * previewScaleX + previewOffsetX;
     }
 
@@ -520,7 +546,7 @@ export function TChart(container: any) {
         play(previewRangeY, previewMaxY - previewMinY);
     }
 
-    function setMainMinMax(min: any, max: any) {
+    function setMainMinMax(min: Nullable<number>, max: Nullable<number>) {
         let changed = false;
 
         if (min !== null && mainMinX !== min) {
@@ -544,12 +570,12 @@ export function TChart(container: any) {
         }
     }
 
-    function select(mouseX: any, mouseY: any) {
+    function select(mouseX: Nullable<number>, mouseY: Nullable<number>) {
         if (selectX !== mouseX) {
             selectX = mouseX;
             needRedrawMain = true;
 
-            if (selectX === null) {
+            if (selectX === null || mouseX === null) {
                 selectI = -1;
                 popup.style.display = 'none';
             } else {
@@ -583,9 +609,13 @@ export function TChart(container: any) {
         if (selectY !== mouseY) {
             selectY = mouseY;
             if (!popupBounds) popupBounds = popup.getBoundingClientRect();
-            let popupY = mouseY / pixelRatio + 39 - popupBounds.height - popupTopMargin;
-            if (popupY < 0) popupY = mouseY / pixelRatio + 39 + popupTopMargin;
-            popup.style.top = popupY + 'px';
+            if (mouseY === null) {
+                mouseY = null;
+            } else {
+                let popupY = mouseY / pixelRatio + 39 - popupBounds.height - popupTopMargin;
+                if (popupY < 0) popupY = mouseY / pixelRatio + 39 + popupTopMargin;
+                popup.style.top = popupY + 'px';
+            }
         }
     }
 
@@ -692,7 +722,7 @@ export function TChart(container: any) {
         requestAnimationFrame(render);
     }
 
-    function renderTextsX(textX: any, skipStep: any) {
+    function renderTextsX(textX: TextAxises, skipStep: boolean) {
         withDefinedVariables((context) => {
             if (textX.alpha.value > 0) {
                 context.globalAlpha = textX.alpha.value;
@@ -733,7 +763,7 @@ export function TChart(container: any) {
         })
     }
 
-    function renderLinesY(textY: any) {
+    function renderLinesY(textY: TextAxises) {
         withDefinedVariables((context) => {
             if (textY.alpha.value > 0) {
                 context.globalAlpha = textY.alpha.value;
@@ -768,8 +798,10 @@ export function TChart(container: any) {
                 let columnOffsetY = previewOffsetY;
 
                 if (yColumn.alpha.toValue === 0) {
-                    columnScaleY = yColumn.saveScaleY;
-                    columnOffsetY = yColumn.saveOffsetY;
+                    if (yColumn.saveScaleY && yColumn.saveOffsetY) {
+                        columnScaleY = yColumn.saveScaleY;
+                        columnOffsetY = yColumn.saveOffsetY;
+                    }
                 } else {
                     let columnRangeY = yColumn.max - yColumn.min;
                     if (columnRangeY > previewRangeY.value) {
@@ -807,7 +839,7 @@ export function TChart(container: any) {
     }
 
     function renderMain() {
-        withDefinedVariables((context, colors) => {
+        withDefinedVariables((context, colors, selectI) => {
             context.clearRect(0, 0, width, mainHeight + previewMarginTop);
 
             mainScaleY = -(mainHeight - mainPaddingTop) / mainRangeY.value;
@@ -853,11 +885,11 @@ export function TChart(container: any) {
                 context.lineTo(xMain, mainHeight);
                 context.stroke();
 
-                const xArc = xColumn?.data[selectI] as number;
+                const xArc = xColumn?.data[selectI!] as number;
                 for (let c = 0; c < columns.length; c++) {
                     const yColumn = columns[c];
                     if (yColumn.alpha.toValue === 0) continue;
-                    const y = yColumn.data[selectI];
+                    const y = yColumn.data[selectI!];
                     context.strokeStyle = data?.colors[yColumn.name as keyof Names] as string;
                     context.fillStyle = colors?.circleFill;
                     context.lineWidth = circleLineWidth;
@@ -884,7 +916,7 @@ export function TChart(container: any) {
         })
     }
 
-    function renderPath(yColumn: any, minI: any, maxI: any, scaleX: any, scaleY: any, offsetX: any, offsetY: any) {
+    function renderPath(yColumn: ModifiedColumn, minI: number, maxI: number, scaleX: number, scaleY: number, offsetX: number, offsetY: number) {
         withDefinedVariables((context) => {
             context.strokeStyle = data?.colors[yColumn.name as keyof Names] as string;
 
