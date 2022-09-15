@@ -218,6 +218,12 @@ export function TChart(container: any) {
 
     let destroyed = false;
 
+    function withDefinedVariables(cb: (context: CanvasRenderingContext2D) => void) {
+        if (context) {
+            return cb(context);
+        }
+    }
+
     function formatDate(time: number, short = false) {
         const date = new Date(time);
         const s = MONTH_NAMES[date.getMonth()] + ' ' + date.getDate();
@@ -244,11 +250,11 @@ export function TChart(container: any) {
         return n.toString()
     }
 
-    function createElement<T>(parent: HTMLElement, tag: string, clazz: string = ''): HTMLElement extends T ? HTMLElement : any {
+    function createElement<T>(parent: HTMLElement, tag: string, clazz: string = ''): T {
         const element = document.createElement(tag);
         if (clazz) element.classList.add(clazz);
         parent.appendChild(element);
-        return element;
+        return element as T;
     }
 
     function removeAllChild(parent: HTMLElement) {
@@ -418,7 +424,7 @@ export function TChart(container: any) {
 
                 if (data.columns.length > 2) {
                     const label = createElement<HTMLLabelElement>(checksContainer, 'label', 'checkbox');
-                    label.innerText = data.names[name as keyof DataSubProperty];
+                    label.innerText = data.names[name as keyof DataSubProperty] as string;
 
                     const input = createElement<HTMLInputElement>(label, 'input');
                     input.setAttribute('data-id', (columns.length - 1).toString());
@@ -452,14 +458,14 @@ export function TChart(container: any) {
                 // create popup column
 
                 const popupColumn = createElement<HTMLDivElement>(popup, 'div', 'column');
-                popupColumn.style.color = data.colors[name as keyof DataSubProperty];
+                popupColumn.style.color = data.colors[name as keyof DataSubProperty] as string;
                 popupColumns.push(popupColumn);
 
                 const popupValue = createElement<HTMLDivElement>(popupColumn, 'div', 'value');
                 popupValues.push(popupValue);
 
                 const popupLabel = createElement<HTMLDivElement>(popupColumn, 'div', 'label');
-                popupLabel.innerText = data.names[name as keyof DataSubProperty];
+                popupLabel.innerText = data.names[name as keyof DataSubProperty] as string;
             }
         }
 
@@ -733,200 +739,203 @@ export function TChart(container: any) {
     }
 
     function renderTextsX(textX: TextAxises, skipStep: boolean) {
-        if (textX.alpha.value > 0) {
-            if (context) context.globalAlpha = textX.alpha.value;
-
-            let delta = textX.delta;
-            if (skipStep) delta *= 2;
-
-            let endI = Math.min(Math.ceil(mainMaxX / intervalX / delta) * delta, xColumn?.data.length);
-            if (skipStep) endI -= textX.delta;
-            const startI = Math.max(mainMinI - 1, 1);
-
-            for (let i = endI - 1; i >= startI; i -= delta) {
-                const value = xColumn?.data[i];
-                const x = mainToScreenX(value);
-                let offsetX = 0;
-                if (i === xColumn?.data.length - 1) {
-                    offsetX = -textXWidth;
-                } else if (i > 1) {
-                    offsetX = -(textXWidth / 2);
+        withDefinedVariables((context) => {
+            if (textX.alpha.value > 0) {
+                context.globalAlpha = textX.alpha.value;
+    
+                let delta = textX.delta;
+                if (skipStep) delta *= 2;
+    
+                let endI = Math.min(Math.ceil(mainMaxX / intervalX / delta) * delta, xColumn?.data.length);
+                if (skipStep) endI -= textX.delta;
+                const startI = Math.max(mainMinI - 1, 1);
+    
+                for (let i = endI - 1; i >= startI; i -= delta) {
+                    const value = xColumn?.data[i];
+                    const x = mainToScreenX(value);
+                    let offsetX = 0;
+                    if (i === xColumn?.data.length - 1) {
+                        offsetX = -textXWidth;
+                    } else if (i > 1) {
+                        offsetX = -(textXWidth / 2);
+                    }
+    
+                    context.fillText(formatDate(value, true), x + offsetX, mainHeight + textXMargin);
                 }
-
-                if (context) context.fillText(formatDate(value, true), x + offsetX, mainHeight + textXMargin);
             }
-        }
+        });
     }
 
     function renderTextsY(textY: TextAxises) {
-        if (textY.alpha.value > 0) {
-            if (context) context.globalAlpha = textY.alpha.value;
-
-            for (let i = 1; i < textCountY; i++) {
-                let value = mainMinY + textY.delta * i;
-                let y = mainToScreenY(value);
-                if (context) context.fillText(formatNumber(value, true), paddingHor, y + textYMargin);
+        withDefinedVariables((context) => {
+            if (textY.alpha.value > 0) {
+                context.globalAlpha = textY.alpha.value;
+    
+                for (let i = 1; i < textCountY; i++) {
+                    let value = mainMinY + textY.delta * i;
+                    let y = mainToScreenY(value);
+                    context.fillText(formatNumber(value, true), paddingHor, y + textYMargin);
+                }
             }
-        }
+        });
     }
 
     function renderLinesY(textY: TextAxises) {
-        if (textY.alpha.value > 0) {
-            if (context) context.globalAlpha = textY.alpha.value;
-
-            for (let i = 1; i < textCountY; i++) {
-                const value = mainMinY + textY.delta * i;
-                const y = mainToScreenY(value);
-                if (context) {
+        withDefinedVariables((context) => {
+            if (textY.alpha.value > 0) {
+                context.globalAlpha = textY.alpha.value;
+    
+                for (let i = 1; i < textCountY; i++) {
+                    const value = mainMinY + textY.delta * i;
+                    const y = mainToScreenY(value);
                     context.beginPath();
                     context.moveTo(paddingHor, y);
                     context.lineTo(width - paddingHor, y);
                     context.stroke();
                 }
             }
-        }
+        });
     }
 
     function renderPreview() {
-        if (context) context.clearRect(0, height - previewHeight - 1, width, previewHeight + 1);
+        withDefinedVariables((context) => {
+            context.clearRect(0, height - previewHeight - 1, width, previewHeight + 1);
 
-        // paths
+            // paths
 
-        previewScaleY = -previewHeight / previewRangeY.value;
-        previewOffsetY = height - previewMinY * previewScaleY;
+            previewScaleY = -previewHeight / previewRangeY.value;
+            previewOffsetY = height - previewMinY * previewScaleY;
 
-        columns?.forEach((column, _) => {
-            if (column.previewAlpha.value === 0) return;
+            columns?.forEach((column, _) => {
+                if (column.previewAlpha.value === 0) return;
 
-            let columnScaleY = previewScaleY;
-            let columnOffsetY = previewOffsetY;
+                let columnScaleY = previewScaleY;
+                let columnOffsetY = previewOffsetY;
 
-            if (column.alpha.toValue === 0) {
-                if (column.saveScaleY && column.saveOffsetY) {
-                    columnScaleY = column.saveScaleY;
-                    columnOffsetY = column.saveOffsetY;
+                if (column.alpha.toValue === 0) {
+                    if (column.saveScaleY && column.saveOffsetY) {
+                        columnScaleY = column.saveScaleY;
+                        columnOffsetY = column.saveOffsetY;
+                    }
+                } else {
+                    let columnRangeY = column.max - column.min;
+                    if (columnRangeY > previewRangeY.value) {
+                        columnScaleY = -previewHeight / columnRangeY;
+                        columnOffsetY = height - previewMinY * columnScaleY;
+                    }
                 }
-            } else {
-                let columnRangeY = column.max - column.min;
-                if (columnRangeY > previewRangeY.value) {
-                    columnScaleY = -previewHeight / columnRangeY;
-                    columnOffsetY = height - previewMinY * columnScaleY;
-                }
-            }
 
-            if (context) {
                 context.globalAlpha = column.previewAlpha.value;
                 context.lineWidth = previewLineWidth;
+
+                renderPath(column, 1, column.data.length, previewScaleX, columnScaleY, previewOffsetX, columnOffsetY)
+            });
+
+            // draw preview ui
+
+            previewUiMin = previewToScreenX(mainMinX);
+            previewUiMax = previewToScreenX(mainMaxX);
+
+            if (colors?.previewAlpha) {
+                context.globalAlpha = colors?.previewAlpha;
+                context.beginPath();
+                context.rect(paddingHor, height - previewHeight, previewUiMin - paddingHor, previewHeight);
+                context.rect(previewUiMax, height - previewHeight, width - previewUiMax - paddingHor, previewHeight);
+                context.fillStyle = colors?.preview;
+                context.fill();
+
+                context.globalAlpha = colors?.previewBorderAlpha;
+                context.beginPath();
+                context.rect(previewUiMin, height - previewHeight, previewUiW, previewHeight);
+                context.rect(previewUiMax - previewUiW, height - previewHeight, previewUiW, previewHeight);
+                context.rect(previewUiMin, height - previewHeight, previewUiMax - previewUiMin, previewUiH);
+                context.rect(previewUiMin, height - previewUiH, previewUiMax - previewUiMin, previewUiH);
+                context.fillStyle = colors?.previewBorder;
+                context.fill();
             }
-            renderPath(column, 1, column.data.length, previewScaleX, columnScaleY, previewOffsetX, columnOffsetY)
         });
-
-        // draw preview ui
-
-        previewUiMin = previewToScreenX(mainMinX);
-        previewUiMax = previewToScreenX(mainMaxX);
-
-        if (context && colors?.previewAlpha) {
-            context.globalAlpha = colors?.previewAlpha;
-            context.beginPath();
-            context.rect(paddingHor, height - previewHeight, previewUiMin - paddingHor, previewHeight);
-            context.rect(previewUiMax, height - previewHeight, width - previewUiMax - paddingHor, previewHeight);
-            context.fillStyle = colors?.preview;
-            context.fill();
-
-            context.globalAlpha = colors?.previewBorderAlpha;
-            context.beginPath();
-            context.rect(previewUiMin, height - previewHeight, previewUiW, previewHeight);
-            context.rect(previewUiMax - previewUiW, height - previewHeight, previewUiW, previewHeight);
-            context.rect(previewUiMin, height - previewHeight, previewUiMax - previewUiMin, previewUiH);
-            context.rect(previewUiMin, height - previewUiH, previewUiMax - previewUiMin, previewUiH);
-            context.fillStyle = colors?.previewBorder;
-            context.fill();
-        }
     }
 
     function renderMain() {
-        if (context && colors?.line) {
+        withDefinedVariables((context) => {
             context.clearRect(0, 0, width, mainHeight + previewMarginTop);
 
-        mainScaleY = -(mainHeight - mainPaddingTop) / mainRangeY.value;
-        mainOffsetY = mainHeight - mainMinY * mainScaleY;
+            mainScaleY = -(mainHeight - mainPaddingTop) / mainRangeY.value;
+            mainOffsetY = mainHeight - mainMinY * mainScaleY;
 
-        // lines
+            // lines
 
-        context.strokeStyle = colors?.line;
-        context.lineWidth = lineWidth;
-
-        renderLinesY(oldTextY);
-        renderLinesY(newTextY);
-
-        context.globalAlpha = 1;
-        context.strokeStyle = colors?.zeroLine;
-        context.beginPath();
-        context.moveTo(paddingHor, mainHeight);
-        context.lineTo(width - paddingHor, mainHeight);
-        context.stroke();
-
-        // paths
-
-        columns?.forEach((column, _) => {
-            if (column.alpha.value === 0) return;
-
-            if (context) {
-                context.globalAlpha = column.alpha.value;
-                context.lineWidth = mainLineWidth;
-            }
-
-            renderPath(column, mainMinI, mainMaxI, mainScaleX, mainScaleY, mainOffsetX, mainOffsetY);
-        })
-
-        // select
-
-        if (selectX) {
-            context.globalAlpha = 1;
-            context.strokeStyle = colors?.selectLine;
+            context.strokeStyle = colors?.line as string;
             context.lineWidth = lineWidth;
+
+            renderLinesY(oldTextY);
+            renderLinesY(newTextY);
+
+            context.globalAlpha = 1;
+            context.strokeStyle = colors?.zeroLine as string;
             context.beginPath();
-            const xMain = mainToScreenX(selectX);
-            context.moveTo(xMain, 0);
-            context.lineTo(xMain, mainHeight);
+            context.moveTo(paddingHor, mainHeight);
+            context.lineTo(width - paddingHor, mainHeight);
             context.stroke();
 
-            const xArc = xColumn?.data[selectI] as number;
+            // paths
+
             columns?.forEach((column, _) => {
-                if (column.alpha.toValue === 0) return;
-                const y = column.data[selectI];
-                if (context && colors?.circleFill) {
-                    context.strokeStyle = data?.colors[column.name as keyof DataSubProperty];
-                    context.fillStyle = colors?.circleFill;
-                    context.lineWidth = circleLineWidth;
-                    context.beginPath();
-                    context.arc(xArc * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
-                    context.stroke();
-                    context.fill();
-                }
-            });
-        }
+                if (column.alpha.value === 0) return;
 
-        // text
+                context.globalAlpha = column.alpha.value;
+                context.lineWidth = mainLineWidth;
 
-        context.fillStyle = colors?.text;
-        context.font = font;
-        let skipStepNew = oldTextX.delta > newTextX.delta;
-        renderTextsX(oldTextX, !skipStepNew);
-        renderTextsX(newTextX, skipStepNew);
+                renderPath(column, mainMinI, mainMaxI, mainScaleX, mainScaleY, mainOffsetX, mainOffsetY);
+            })
 
-        renderTextsY(oldTextY);
-        renderTextsY(newTextY);
+            // select
 
-        context.globalAlpha = 1;
-        context.fillText(formatNumber(mainMinY), paddingHor, mainHeight + textYMargin);
-        }
+            if (selectX) {
+                context.globalAlpha = 1;
+                context.strokeStyle = colors?.selectLine as string;
+                context.lineWidth = lineWidth;
+                context.beginPath();
+                const xMain = mainToScreenX(selectX);
+                context.moveTo(xMain, 0);
+                context.lineTo(xMain, mainHeight);
+                context.stroke();
+
+                const xArc = xColumn?.data[selectI] as number;
+                columns?.forEach((column, _) => {
+                    if (column.alpha.toValue === 0) return;
+                    const y = column.data[selectI];
+                    if (colors?.circleFill) {
+                        context.strokeStyle = data?.colors[column.name as keyof DataSubProperty] as string;
+                        context.fillStyle = colors?.circleFill;
+                        context.lineWidth = circleLineWidth;
+                        context.beginPath();
+                        context.arc(xArc * mainScaleX + mainOffsetX, y * mainScaleY + mainOffsetY, circleRadius, 0, Math.PI * 2);
+                        context.stroke();
+                        context.fill();
+                    }
+                });
+            }
+
+            // text
+
+            context.fillStyle = colors?.text as string;
+            context.font = font;
+            let skipStepNew = oldTextX.delta > newTextX.delta;
+            renderTextsX(oldTextX, !skipStepNew);
+            renderTextsX(newTextX, skipStepNew);
+
+            renderTextsY(oldTextY);
+            renderTextsY(newTextY);
+
+            context.globalAlpha = 1;
+            context.fillText(formatNumber(mainMinY), paddingHor, mainHeight + textYMargin);
+        });
     }
 
     function renderPath(yColumn: ColumnModified, minI: number, maxI: number, scaleX: number, scaleY: number, offsetX: number, offsetY: number) {
-        if (context) {
-            context.strokeStyle = data?.colors[yColumn.name as keyof DataSubProperty];
+        withDefinedVariables((context) => {
+            context.strokeStyle = data?.colors[yColumn.name as keyof DataSubProperty] as string;
 
             context.beginPath();
             context.lineJoin = 'bevel';
@@ -945,7 +954,7 @@ export function TChart(container: any) {
                 context.lineTo(x * scaleX + offsetX, y * scaleY + offsetY);
             }
             context.stroke();
-        }
+        })
     }
 
     const run = () => {
