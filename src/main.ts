@@ -4,8 +4,8 @@ import data from './data.json';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
+<button type="button" class="set-colors">Set dark colors</button>
 <div id="charts"></div>
-<button type="button" class="set-dark-colors">Set dark colors</button>
 `;
 
 let lightTheme = true;
@@ -68,4 +68,4 @@ data.forEach((slot, i) => {
 
 charts.forEach(chart => chart.run());
 
-document.querySelector('.set-dark-colors')?.addEventListener('click', onChangeTheme)
+document.querySelector('.set-colors')?.addEventListener('click', onChangeTheme)
