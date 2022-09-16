@@ -5,9 +5,27 @@ import data from './data.json';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
 <div id="charts"></div>
+<button type="button" class="set-dark-colors">Set dark colors</button>
 `;
 
-var LIGHT_COLORS: ThemeColors = {
+let lightTheme = true;
+
+function onChangeTheme(this: HTMLElement, _: Event) {
+  lightTheme = !lightTheme;
+  if (lightTheme) {
+      this.innerText = 'Switch to Night Mode'
+      document.body.classList.remove('dark-theme');
+  } else {
+      this.innerText = 'Switch to Day Mode'
+      document.body.classList.add('dark-theme');
+  }
+  for (var i in charts) {
+      var chart = charts[i];
+      chart.setColors(lightTheme ? LIGHT_COLORS : DARK_COLORS);
+  }
+}
+
+const LIGHT_COLORS: ThemeColors = {
   circleFill: '#ffffff',
   line: '#f2f4f5',
   zeroLine: '#ecf0f3',
@@ -16,6 +34,18 @@ var LIGHT_COLORS: ThemeColors = {
   preview: '#eef2f5',
   previewAlpha: 0.8,
   previewBorder: '#b6cfe1',
+  previewBorderAlpha: 0.5
+};
+
+const DARK_COLORS: ThemeColors = {
+  circleFill: '#242f3e',
+  line: '#293544',
+  zeroLine: '#313d4d',
+  selectLine: '#3b4a5a',
+  text: '#546778',
+  preview: '#152435',
+  previewAlpha: 0.8,
+  previewBorder: '#5a7e9f',
   previewBorderAlpha: 0.5
 };
 
@@ -37,3 +67,5 @@ data.forEach((slot, i) => {
 })
 
 charts.forEach(chart => chart.run());
+
+document.querySelector('.set-dark-colors')?.addEventListener('click', onChangeTheme)
